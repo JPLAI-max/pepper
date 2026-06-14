@@ -217,6 +217,10 @@ export const ListDocumentsResponseItem = zod.object({
   "status": zod.string(),
   "orderIndex": zod.number(),
   "note": zod.string().nullish(),
+  "fileUrl": zod.string().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().nullish(),
+  "uploadedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListDocumentsResponse = zod.array(ListDocumentsResponseItem)
@@ -233,7 +237,10 @@ export const CreateDocumentBody = zod.object({
   "category": zod.enum(['Income', 'Assets', 'Identity', 'Property', 'Credit', 'Other']).optional(),
   "status": zod.enum(['needed', 'in_progress', 'complete']).optional(),
   "orderIndex": zod.number().optional(),
-  "note": zod.string().optional()
+  "note": zod.string().optional(),
+  "fileUrl": zod.string().optional(),
+  "mimeType": zod.string().optional(),
+  "sizeBytes": zod.number().optional()
 })
 
 
@@ -262,6 +269,10 @@ export const UpdateDocumentResponse = zod.object({
   "status": zod.string(),
   "orderIndex": zod.number(),
   "note": zod.string().nullish(),
+  "fileUrl": zod.string().nullish(),
+  "mimeType": zod.string().nullish(),
+  "sizeBytes": zod.number().nullish(),
+  "uploadedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -411,6 +422,124 @@ export const TranscribeOpenaiAudioBody = zod.object({
 
 export const TranscribeOpenaiAudioResponse = zod.object({
   "text": zod.string()
+})
+
+
+/**
+ * @summary Guided discovery turn that builds the profile from conversation
+ */
+export const SendDiscoveryMessageBody = zod.object({
+  "conversationId": zod.number(),
+  "content": zod.string()
+})
+
+export const SendDiscoveryMessageResponse = zod.object({
+  "reply": zod.string(),
+  "profile": zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "monthlyIncome": zod.number(),
+  "monthlyExpenses": zod.number(),
+  "cashSavings": zod.number(),
+  "otherAssets": zod.number(),
+  "totalDebt": zod.number(),
+  "creditScore": zod.number(),
+  "preferredVoice": zod.string(),
+  "onboarded": zod.boolean(),
+  "updatedAt": zod.coerce.date()
+}),
+  "goal": zod.union([zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "targetAmount": zod.number(),
+  "currentAmount": zod.number(),
+  "targetDate": zod.string().nullish(),
+  "status": zod.string(),
+  "priority": zod.number(),
+  "note": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "checklist": zod.object({
+  "goal": zod.boolean(),
+  "income": zod.boolean(),
+  "expenses": zod.boolean(),
+  "savings": zod.boolean(),
+  "debt": zod.boolean(),
+  "credit": zod.boolean(),
+  "timeline": zod.boolean()
+}),
+  "readyForReveal": zod.boolean()
+})
+
+
+/**
+ * @summary Convert text to spoken audio (mp3, base64-encoded)
+ */
+
+
+
+export const SpeakTextBody = zod.object({
+  "text": zod.string().min(1),
+  "voice": zod.enum(['female', 'male']).optional()
+})
+
+export const SpeakTextResponse = zod.object({
+  "audio": zod.string()
+})
+
+
+/**
+ * @summary Generate a personalized roadmap from the profile and goals
+ */
+export const GenerateRoadmapResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string(),
+  "orderIndex": zod.number(),
+  "actionLabel": zod.string().nullish(),
+  "goalId": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const GenerateRoadmapResponse = zod.array(GenerateRoadmapResponseItem)
+
+
+/**
+ * @summary Request a presigned URL for direct-to-GCS file upload
+ */
+
+
+
+
+
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+})
+
+
+
+
+
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+}).optional()
+})
+
+
+/**
+ * @summary Serve an uploaded object entity from PRIVATE_OBJECT_DIR
+ */
+export const GetStorageObjectParams = zod.object({
+  "objectPath": zod.coerce.string()
 })
 
 

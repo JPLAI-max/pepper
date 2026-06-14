@@ -188,6 +188,14 @@ export interface Document {
   orderIndex: number;
   /** @nullable */
   note?: string | null;
+  /** @nullable */
+  fileUrl?: string | null;
+  /** @nullable */
+  mimeType?: string | null;
+  /** @nullable */
+  sizeBytes?: number | null;
+  /** @nullable */
+  uploadedAt?: string | null;
   createdAt: string;
 }
 
@@ -219,6 +227,9 @@ export interface DocumentInput {
   status?: DocumentInputStatus;
   orderIndex?: number;
   note?: string;
+  fileUrl?: string;
+  mimeType?: string;
+  sizeBytes?: number;
 }
 
 export type DocumentUpdateCategory = typeof DocumentUpdateCategory[keyof typeof DocumentUpdateCategory];
@@ -335,5 +346,61 @@ export interface OpenaiTranscribeInput {
 
 export interface OpenaiTranscribeOutput {
   text: string;
+}
+
+export interface DiscoveryInput {
+  conversationId: number;
+  content: string;
+}
+
+export interface DiscoveryChecklist {
+  goal: boolean;
+  income: boolean;
+  expenses: boolean;
+  savings: boolean;
+  debt: boolean;
+  credit: boolean;
+  timeline: boolean;
+}
+
+export interface DiscoveryResult {
+  reply: string;
+  profile: Profile;
+  goal?: Goal | null;
+  checklist: DiscoveryChecklist;
+  readyForReveal: boolean;
+}
+
+export type SpeakInputVoice = typeof SpeakInputVoice[keyof typeof SpeakInputVoice];
+
+
+export const SpeakInputVoice = {
+  female: 'female',
+  male: 'male',
+} as const;
+
+export interface SpeakInput {
+  /** @minLength 1 */
+  text: string;
+  voice?: SpeakInputVoice;
+}
+
+export interface SpeakOutput {
+  audio: string;
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
 }
 

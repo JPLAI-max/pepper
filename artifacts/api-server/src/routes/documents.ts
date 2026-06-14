@@ -19,7 +19,13 @@ router.post("/documents", async (req, res) => {
     res.status(400).json({ error: "Invalid document data" });
     return;
   }
-  const created = await db.insert(documents).values(parsed.data).returning();
+  const created = await db
+    .insert(documents)
+    .values({
+      ...parsed.data,
+      uploadedAt: parsed.data.fileUrl ? new Date() : null,
+    })
+    .returning();
   res.status(201).json(created[0]);
 });
 

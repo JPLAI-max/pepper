@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { 
-  useListRoadmapSteps, useCreateRoadmapStep, useUpdateRoadmapStep,
+  useListRoadmapSteps, useCreateRoadmapStep, useUpdateRoadmapStep, useGenerateRoadmap,
   getListRoadmapStepsQueryKey, getGetDashboardSummaryQueryKey
 } from "@workspace/api-client-react";
-import { CheckCircle2, Circle, Clock, Plus, Loader2, ArrowRight, Map } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Plus, Loader2, ArrowRight, Map, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ export default function Roadmap() {
   const { data: steps, isLoading } = useListRoadmapSteps();
   const createStep = useCreateRoadmapStep();
   const updateStep = useUpdateRoadmapStep();
+  const generateRoadmap = useGenerateRoadmap();
   const queryClient = useQueryClient();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -65,6 +66,10 @@ export default function Roadmap() {
     setIsDialogOpen(true);
   };
 
+  const handleGenerate = () => {
+    generateRoadmap.mutate(undefined, { onSuccess: invalidateQueries });
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -89,8 +94,12 @@ export default function Roadmap() {
             A step-by-step personalized plan to reach your wealth building goals.
           </p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
-          <Button onClick={openNewStep} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all h-11 px-6"><Plus className="w-4 h-4 mr-2" /> Add Step</Button>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="flex gap-3">
+          <Button onClick={handleGenerate} disabled={generateRoadmap.isPending} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all h-11 px-6">
+            {generateRoadmap.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+            {steps?.length ? "Regenerate" : "Generate my roadmap"}
+          </Button>
+          <Button variant="outline" onClick={openNewStep} className="rounded-full border-white/10 bg-secondary/50 hover:bg-secondary text-foreground transition-all h-11 px-6"><Plus className="w-4 h-4 mr-2" /> Add Step</Button>
         </motion.div>
       </div>
 
@@ -163,7 +172,11 @@ export default function Roadmap() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 px-4 bg-card/30 backdrop-blur-md rounded-3xl border border-white/5 shadow-lg ml-[-1rem]">
             <Map className="w-16 h-16 text-primary/40 mx-auto mb-6 drop-shadow-[0_0_15px_rgba(232,93,63,0.3)]" />
             <h3 className="text-2xl font-serif tracking-tight mb-3">Roadmap is empty</h3>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto font-light">Your roadmap is currently empty. Talk to Pepper to generate a personalized plan.</p>
+            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto font-light">Let Pepper build a personalized, step-by-step plan from your financial picture and primary goal.</p>
+            <Button onClick={handleGenerate} disabled={generateRoadmap.isPending} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all h-12 px-8 text-base">
+              {generateRoadmap.isPending ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Sparkles className="w-5 h-5 mr-2" />}
+              Generate my roadmap
+            </Button>
           </motion.div>
         )}
       </div>

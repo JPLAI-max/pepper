@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { usePepper } from "@/pepper";
-import { Home, Target, Map, Shield, FileText, Briefcase, Menu, LogOut, Loader2, Sparkles, MessageSquare, ChevronRight } from "lucide-react";
+import { Home, LayoutDashboard, Target, Map, Shield, FileText, Briefcase, Menu, Loader2, Sparkles, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useGetProfile } from "@workspace/api-client-react";
@@ -14,7 +14,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: profile, isLoading } = useGetProfile();
 
   const nav = [
-    { label: "Command Center", href: "/", icon: Home },
+    { label: "Home", href: "/", icon: Home },
+    { label: "Mission Control", href: "/dashboard", icon: LayoutDashboard },
     { label: "Goals", href: "/goals", icon: Target },
     { label: "Roadmap", href: "/roadmap", icon: Map },
     { label: "Readiness", href: "/readiness", icon: Shield },

@@ -15,4 +15,7 @@ export interface DocumentInput {
   status?: DocumentInputStatus;
   orderIndex?: number;
   note?: string;
+  fileUrl?: string;
+  mimeType?: string;
+  sizeBytes?: number;
 }

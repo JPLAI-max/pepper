@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pepper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg0:#0b0908;
+    --bg1:#171210;
+    --bg2:#221813;
+    --ember:#ff7e3f;
+    --copper:#d8531f;
+    --amber:#ffb454;
+    --gold:#ffd98a;
+    --deep:#5e2410;
+    --ink:#f6ece1;
+    --muted:#a8978a;
+    --line:rgba(255,180,120,.14);
+    --glass:rgba(28,21,17,.55);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 90% at 50% 18%, rgba(216,83,31,.16) 0%, rgba(216,83,31,0) 55%),
+      radial-gradient(140% 120% at 50% 120%, #2a1c14 0%, var(--bg0) 60%),
+      linear-gradient(180deg,var(--bg1),var(--bg0));
+    min-height:100svh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    overflow:hidden;position:relative;
+    padding:max(24px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* wordmark */
+  .mark{
+    position:absolute;top:max(26px,env(safe-area-inset-top));left:0;right:0;
+    text-align:center;
+    font-weight:500;font-size:.82rem;letter-spacing:.42em;
+    color:var(--muted);text-indent:.42em;
+  }
+  .mark b{color:var(--ink);font-weight:600}
+
+  .stage{display:flex;flex-direction:column;align-items:center;width:100%;max-width:560px}
+
+  /* ---------- the orb ---------- */
+  .orb-wrap{position:relative;width:268px;height:268px;display:grid;place-items:center}
+  .orb-glow{
+    position:absolute;width:115%;height:115%;border-radius:50%;
+    background:radial-gradient(circle at 50% 50%, rgba(255,150,80,.55), rgba(255,120,60,.12) 45%, rgba(255,120,60,0) 70%);
+    filter:blur(26px);
+    animation:breathe-glow 6.5s ease-in-out infinite;
+  }
+  .orb{
+    position:relative;width:204px;height:204px;border-radius:50%;
+    overflow:hidden;isolation:isolate;
+    background:radial-gradient(circle at 36% 30%, #ffe6bf 0%, var(--amber) 16%, var(--ember) 42%, var(--copper) 70%, var(--deep) 100%);
+    box-shadow:
+      inset -22px -26px 60px rgba(60,18,4,.85),
+      inset 14px 16px 40px rgba(255,225,180,.55),
+      0 24px 80px rgba(216,83,31,.32);
+    animation:breathe 6.5s ease-in-out infinite;
+  }
+  /* living interior — drifting warm thought-clouds */
+  .blob{position:absolute;border-radius:50%;filter:blur(16px);mix-blend-mode:screen;opacity:.9}
+  .b1{width:130px;height:130px;left:8%;top:14%;background:radial-gradient(circle,var(--gold),transparent 68%);animation:drift1 11s ease-in-out infinite}
+  .b2{width:150px;height:150px;right:2%;top:30%;background:radial-gradient(circle,var(--ember),transparent 66%);animation:drift2 14s ease-in-out infinite}
+  .b3{width:120px;height:120px;left:24%;bottom:6%;background:radial-gradient(circle,#fff0d6,transparent 64%);animation:drift3 9s ease-in-out infinite}
+  .sheen{
+    position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle at 34% 26%, rgba(255,255,255,.75), rgba(255,255,255,0) 30%);
+    mix-blend-mode:screen;opacity:.6;
+  }
+  .rim{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 1px 1px rgba(255,210,160,.25)}
+
+  /* listening state */
+  .orb-wrap.listening .orb{animation-duration:2.6s}
+  .orb-wrap.listening .orb-glow{animation-duration:2.6s;background:radial-gradient(circle at 50% 50%, rgba(255,170,90,.72), rgba(255,120,60,.16) 46%, rgba(255,120,60,0) 70%)}
+  .orb-wrap.listening .b1{animation-duration:4.5s}
+  .orb-wrap.listening .b2{animation-duration:5.5s}
+
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  @keyframes breathe-glow{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.08);opacity:1}}
+  @keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,22px)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-22px,-14px)}}
+  @keyframes drift3{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-20px)}}
+
+  /* ---------- prompt + input ---------- */
+  .ask{
+    font-family:'Fraunces',Georgia,serif;font-weight:300;font-size:1.78rem;line-height:1.25;
+    text-align:center;margin:34px 0 26px;letter-spacing:.005em;color:#f3e3d2;
+  }
+  .bar{
+    display:flex;align-items:center;gap:10px;width:100%;
+    background:var(--glass);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 8px 8px 8px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 12px 40px rgba(0,0,0,.45);
+  }
+  .icon-btn{
+    flex:none;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;
+    display:grid;place-items:center;transition:transform .15s ease, background .2s ease;
+  }
+  .mic{background:rgba(255,180,120,.1);color:var(--gold)}
+  .mic:hover{background:rgba(255,180,120,.18)}
+  .mic.on{background:linear-gradient(180deg,var(--ember),var(--copper));color:#fff}
+  .send{background:linear-gradient(180deg,var(--amber),var(--ember));color:#3a1606}
+  .send:hover{transform:scale(1.05)}
+  .icon-btn:active{transform:scale(.94)}
+  .field{
+    flex:1;background:none;border:none;outline:none;color:var(--ink);
+    font-size:1rem;font-family:inherit;padding:0 4px;
+  }
+  .field::placeholder{color:var(--muted)}
+  .upload{flex:none;width:40px;height:46px;border:none;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center}
+  .upload:hover{color:var(--gold)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:20px}
+  .chip{
+    font-size:.84rem;color:var(--muted);cursor:pointer;
+    border:1px solid var(--line);border-radius:999px;padding:8px 15px;
+    background:rgba(255,255,255,.012);transition:all .18s ease;
+  }
+  .chip:hover{color:var(--ink);border-color:rgba(255,180,120,.4);background:rgba(255,150,80,.07)}
+
+  @media (min-width:680px){
+    .orb-wrap{width:320px;height:320px}
+    .orb{width:240px;height:240px}
+    .ask{font-size:2.15rem}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .orb,.orb-glow,.blob{animation:none!important}
+  }
+</style>
+</head>
+<body>
+  <div class="mark"><b>PEPPER</b></div>
+
+  <div class="stage">
+    <div class="orb-wrap" id="orb">
+      <div class="orb-glow"></div>
+      <div class="orb">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+        <div class="blob b3"></div>
+        <div class="sheen"></div>
+        <div class="rim"></div>
+      </div>
+    </div>
+
+    <h1 class="ask">How can I help you today?</h1>
+
+    <div class="bar">
+      <button class="icon-btn mic" id="mic" title="Speak to Pepper" aria-label="Speak to Pepper">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+      <input class="field" id="field" placeholder="Tell Pepper what you're working toward…" autocomplete="off">
+      <button class="upload" title="Upload documents" aria-label="Upload documents">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <button class="icon-btn send" id="send" title="Send" aria-label="Send">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+      </button>
+    </div>
+
+    <div class="chips">
+      <div class="chip">Buy my first home</div>
+      <div class="chip">Generate passive income</div>
+      <div class="chip">Buy a rental property</div>
+      <div class="chip">Improve my credit</div>
+      <div class="chip">Build wealth</div>
+    </div>
+  </div>
+
+<script>
+  const orb = document.getElementById('orb');
+  const mic = document.getElementById('mic');
+  const field = document.getElementById('field');
+
+  mic.addEventListener('click', ()=>{
+    const on = mic.classList.toggle('on');
+    orb.classList.toggle('listening', on);
+    if(on) field.placeholder = 'Listening…';
+    else field.placeholder = "Tell Pepper what you're working toward…";
+  });
+
+  field.addEventListener('focus', ()=> orb.classList.add('listening'));
+  field.addEventListener('blur', ()=>{ if(!mic.classList.contains('on')) orb.classList.remove('listening'); });
+
+  document.querySelectorAll('.chip').forEach(c=>{
+    c.addEventListener('click', ()=>{ field.value = c.textContent; field.focus(); });
+  });
+</script>
+</body>
+</html>
