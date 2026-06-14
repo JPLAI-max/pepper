@@ -57,6 +57,18 @@ export function computeScores(p: Profile): ReadinessScore[] {
     emergencyScore * 0.4 + savingsRate * 0.35 + assetScore * 0.25,
   );
 
+  // Wealth: net-worth trajectory + how much you keep + assets at work.
+  const nw = netWorth(p);
+  const netWorthScore = clamp((nw / 250000) * 100);
+  const wealthScore = clamp(
+    netWorthScore * 0.5 + savingsRate * 0.3 + assetScore * 0.2,
+  );
+
+  // Passive income: investable assets + safety net + positive cashflow.
+  const passiveScore = clamp(
+    assetScore * 0.45 + emergencyScore * 0.3 + (cashflow > 0 ? 100 : 20) * 0.25,
+  );
+
   return [
     {
       key: "homeownership",
@@ -97,6 +109,26 @@ export function computeScores(p: Profile): ReadinessScore[] {
         debtScore >= 60
           ? "Your debt is well managed relative to your income. Nice work."
           : "Let's create a plan to lighten your debt load at a comfortable pace.",
+    },
+    {
+      key: "wealth",
+      label: "Wealth",
+      score: wealthScore,
+      tier: tierFor(wealthScore),
+      summary:
+        wealthScore >= 60
+          ? "Your net worth is building real momentum. Let's compound it."
+          : "Every dollar you keep is a brick in your wealth. We'll grow this together.",
+    },
+    {
+      key: "passive_income",
+      label: "Passive Income",
+      score: passiveScore,
+      tier: tierFor(passiveScore),
+      summary:
+        passiveScore >= 60
+          ? "You're positioned to make money work for you. Let's explore income assets."
+          : "Passive income starts with a cushion and assets — we'll get you there step by step.",
     },
   ];
 }

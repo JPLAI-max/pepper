@@ -123,6 +123,11 @@ export const documents = pgTable("documents", {
   status: text("status").notNull().default("needed"),
   orderIndex: integer("order_index").notNull().default(0),
   note: text("note"),
+  // Phase 1 real uploads (architected for Phase 2 AI extraction).
+  fileUrl: text("file_url"),
+  mimeType: text("mime_type"),
+  sizeBytes: integer("size_bytes"),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -133,7 +138,10 @@ export const documentInputSchema = createInsertSchema(documents, {
   category: z.enum(DOCUMENT_CATEGORIES),
   status: z.enum(["needed", "in_progress", "complete"]),
   orderIndex: z.number().int().min(0).max(10_000),
-}).omit({ id: true, createdAt: true });
+  fileUrl: z.string().max(1024).nullish(),
+  mimeType: z.string().max(255).nullish(),
+  sizeBytes: z.number().int().min(0).max(2_000_000_000).nullish(),
+}).omit({ id: true, createdAt: true, uploadedAt: true });
 
 export const documentUpdateSchema = documentInputSchema.partial();
 
