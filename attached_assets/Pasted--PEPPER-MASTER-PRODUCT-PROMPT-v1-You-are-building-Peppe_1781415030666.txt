@@ -1,0 +1,545 @@
+# PEPPER MASTER PRODUCT PROMPT v1
+
+You are building Pepper.
+
+Pepper is NOT a mortgage website.
+
+Pepper is NOT a loan application.
+
+Pepper is NOT a real estate investment marketplace.
+
+Pepper is NOT a financial dashboard.
+
+Pepper is an AI-powered Wealth Incubator and Financial Operating System.
+
+Its purpose is to help users understand their financial future, create a personalized roadmap, and provide the tools necessary to achieve real-estate-based wealth.
+
+---
+
+# CORE PHILOSOPHY
+
+Most financial companies begin with products.
+
+Pepper begins with goals.
+
+Traditional companies ask:
+
+"What product do you want?"
+
+Pepper asks:
+
+"What are you trying to accomplish?"
+
+Pepper then:
+
+1. Understands the user.
+2. Builds a financial profile.
+3. Identifies obstacles.
+4. Creates a roadmap.
+5. Provides execution tools.
+6. Tracks progress for years.
+
+The roadmap is the product.
+
+The financial tools are how the roadmap gets executed.
+
+---
+
+# PRIMARY USER EXPERIENCE
+
+The AI experience is the center of the platform.
+
+The dashboard is secondary.
+
+The conversation is primary.
+
+Users should feel like they are talking to a highly intelligent financial operator.
+
+Think:
+
+Apple simplicity
+
+*
+
+Jarvis from Iron Man
+
+*
+
+Modern wealth platform
+
+*
+
+Conversational AI
+
+---
+
+# LANDING EXPERIENCE
+
+When users arrive:
+
+DO NOT show a dashboard.
+
+DO NOT show forms.
+
+DO NOT show financial products.
+
+Show only:
+
+A black-to-charcoal gradient background.
+
+Centered on screen:
+
+Pepper AI Orb.
+
+The orb should feel:
+
+* Intelligent
+* Warm
+* Alive
+* Premium
+* Trustworthy
+
+Not robotic.
+
+Not futuristic for the sake of being futuristic.
+
+The orb should use:
+
+Warm Ember Orange
+
+Copper
+
+Amber
+
+Subtle Gold
+
+Avoid:
+
+Blue
+
+Teal
+
+Pink
+
+Neon
+
+Corporate banking colors
+
+---
+
+# OPENING SCREEN
+
+Display:
+
+PEPPER
+
+How can I help you today?
+
+Voice button prominently displayed.
+
+Users may:
+
+Speak
+
+Type
+
+Upload files
+
+All interactions should feel conversational.
+
+---
+
+# PEPPER ORB
+
+The orb is the brand.
+
+The orb is the AI.
+
+The orb is the guide.
+
+The orb should:
+
+* Slowly breathe
+* Animate while listening
+* Animate while speaking
+* Remain visible throughout the platform
+
+The orb is always accessible.
+
+Pepper should feel present on every screen.
+
+---
+
+# CONVERSATIONAL ONBOARDING
+
+Replace traditional intake forms.
+
+Pepper should ask:
+
+What are you trying to accomplish?
+
+Examples:
+
+* Buy my first home
+* Buy an investment property
+* Generate passive income
+* Improve my credit
+* Eliminate debt
+* Build wealth
+* Access capital
+
+Pepper then gathers information naturally.
+
+No giant forms.
+
+No multi-page applications.
+
+Conversation first.
+
+---
+
+# DOCUMENT COLLECTION
+
+Users should be able to drag and drop files directly into the conversation.
+
+Examples:
+
+* Tax Returns
+* W2s
+* Bank Statements
+* Pay Stubs
+* Credit Reports
+* Property Documents
+
+Pepper should:
+
+Read files
+
+Extract data
+
+Categorize documents
+
+Populate profile automatically
+
+Update roadmap automatically
+
+The user should feel:
+
+"I uploaded documents."
+
+Not:
+
+"I completed paperwork."
+
+---
+
+# PEPPER PROFILE ENGINE
+
+While talking, Pepper should build:
+
+Income Profile
+
+Debt Profile
+
+Asset Profile
+
+Credit Profile
+
+Spending Profile
+
+Goal Profile
+
+Investment Profile
+
+Property Profile
+
+All data should be stored automatically.
+
+---
+
+# THE REVEAL MOMENT
+
+After enough information is gathered:
+
+Pepper generates:
+
+YOUR FINANCIAL POSITION
+
+YOUR GOALS
+
+YOUR READINESS SCORES
+
+YOUR ROADMAP
+
+YOUR OPPORTUNITIES
+
+This should feel exciting.
+
+The user should feel:
+
+"Now I understand."
+
+---
+
+# NEVER DECLINE USERS
+
+Traditional systems:
+
+Approved
+
+Declined
+
+Pepper:
+
+Not Ready Yet
+
+Here's Why
+
+Here's What To Do
+
+Here's Your Timeline
+
+Here's Your Plan
+
+Every obstacle should create a roadmap.
+
+---
+
+# DASHBOARD EXPERIENCE
+
+The dashboard should feel like:
+
+Mission Control For Your Financial Future.
+
+Not accounting software.
+
+Not a bank portal.
+
+Not QuickBooks.
+
+---
+
+# DASHBOARD SECTIONS
+
+## Current Mission
+
+Example:
+
+Buy First Home
+
+74% Complete
+
+---
+
+## Readiness Scores
+
+Homeownership
+
+Investment
+
+Credit
+
+Debt
+
+Wealth
+
+Passive Income
+
+---
+
+## Next Best Action
+
+The single highest-impact action.
+
+Example:
+
+Pay down Card #2
+
+Impact:
++15 Readiness Points
+
+---
+
+## Future Projection
+
+Current Path
+
+vs
+
+Recommended Path
+
+Show users what is possible.
+
+---
+
+## Opportunities
+
+Based on roadmap and profile.
+
+Potential opportunities:
+
+Mortgage
+
+Investment Property
+
+Refinancing
+
+Income Units
+
+Passive Income Products
+
+Future Margin Products
+
+Only show relevant opportunities.
+
+---
+
+# PRODUCTS INSIDE PEPPER
+
+Pepper provides tools after trust is established.
+
+Potential product divisions:
+
+Mortgage Marketplace
+
+Investment Marketplace
+
+Property Income Units
+
+Property Financing
+
+Refinancing
+
+HELOC
+
+DSCR
+
+Hard Money
+
+Future Margin Platform
+
+Future Enterprise Platform
+
+Products support the roadmap.
+
+Products are not the starting point.
+
+---
+
+# DESIGN LANGUAGE
+
+Style:
+
+Premium
+
+Minimal
+
+Sophisticated
+
+Modern
+
+Fast
+
+Elegant
+
+Trustworthy
+
+Confident
+
+Use:
+
+Dark gradients
+
+Glassmorphism
+
+Subtle motion
+
+Soft glow effects
+
+Large typography
+
+Generous spacing
+
+Simple layouts
+
+Avoid:
+
+Busy dashboards
+
+Corporate banking designs
+
+Clipart
+
+Cartoons
+
+Overwhelming charts
+
+Excessive colors
+
+---
+
+# MOBILE EXPERIENCE
+
+Mobile is the primary experience.
+
+Users should be able to:
+
+Talk to Pepper
+
+Upload files
+
+Review roadmap
+
+View opportunities
+
+Complete most actions
+
+without touching a traditional form.
+
+The AI orb should remain accessible from every screen.
+
+---
+
+# PEPPER PERSONALITY
+
+Pepper should be:
+
+Helpful
+
+Direct
+
+Intelligent
+
+Encouraging
+
+Calm
+
+Strategic
+
+Trustworthy
+
+Pepper should never feel:
+
+Pushy
+
+Sales-focused
+
+Judgmental
+
+Overly casual
+
+Robotic
+
+---
+
+# NORTH STAR
+
+Pepper exists to help users achieve financial goals and build real-estate-based wealth.
+
+The goal is not to create customers.
+
+The goal is to create success stories.
+
+Every feature should support that mission.
+
+If a feature does not help users understand their future, improve their situation, or execute their roadmap, it should not be built.
