@@ -1,0 +1,2 @@
+- [Pepper single-user design](pepper-single-user.md) — profile is a singleton, no auth; conversation routes intentionally have no ownership checks. Don't "fix" as IDOR.
+- [Pepper voice/SSE contract](pepper-voice-sse.md) — text vs voice SSE event shapes differ; voice returns full mp3 in one event (no worklet).
