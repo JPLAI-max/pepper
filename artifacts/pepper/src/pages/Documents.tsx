@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { motion } from "framer-motion";
 
 type DocStatus = "needed" | "in_progress" | "complete";
 
@@ -36,24 +37,24 @@ const SortableDocumentItem = ({ doc, onDelete }: { doc: Doc, onDelete: (id: numb
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.9 : 1,
   };
 
   return (
-    <Card ref={setNodeRef} style={style} className={`mb-3 ${isDragging ? 'shadow-lg border-primary/50' : 'shadow-sm border-border/50'} bg-card group`}>
-      <CardContent className="p-4 flex items-center gap-3">
-        <div {...attributes} {...listeners} className="cursor-grab hover:text-primary p-1 text-muted-foreground">
+    <Card ref={setNodeRef} style={style} className={`mb-4 border-white/5 bg-card/80 backdrop-blur-xl transition-all rounded-2xl group ${isDragging ? 'shadow-[0_0_30px_rgba(232,93,63,0.3)] ring-1 ring-primary scale-105' : 'shadow-lg hover:bg-card hover:shadow-xl'}`}>
+      <CardContent className="p-4 flex items-center gap-4">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing hover:text-primary p-2 -ml-2 text-muted-foreground transition-colors rounded-lg hover:bg-white/5">
           <GripVertical className="w-5 h-5" />
         </div>
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-          <FileText className="w-5 h-5" />
+        <div className="w-12 h-12 rounded-xl bg-secondary border border-white/5 flex items-center justify-center text-foreground shadow-inner shrink-0 group-hover:text-primary transition-colors">
+          <FileText className="w-6 h-6" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium truncate">{doc.name}</h4>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">{doc.category}</p>
+          <h4 className="font-serif text-lg tracking-tight truncate text-foreground mb-0.5">{doc.name}</h4>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">{doc.category}</p>
         </div>
-        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 hover:text-destructive shrink-0" onClick={() => onDelete(doc.id)}>
+        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 transition-all rounded-full" onClick={() => onDelete(doc.id)}>
           <Trash2 className="w-4 h-4" />
         </Button>
       </CardContent>
@@ -65,18 +66,19 @@ const DroppableColumn = ({ id, title, docs, onDelete }: { id: DocStatus, title: 
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
-    <div className={`bg-muted/10 border rounded-2xl p-4 min-h-[500px] flex flex-col transition-colors ${isOver ? 'border-primary bg-primary/5' : 'border-border/50'}`}>
-      <div className="flex items-center justify-between mb-4 px-2">
-        <h3 className="font-serif text-lg font-medium">{title}</h3>
-        <span className="text-sm font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{docs.length}</span>
+    <div className={`bg-card/40 backdrop-blur-md border border-white/5 rounded-3xl p-6 min-h-[500px] flex flex-col transition-all duration-300 relative overflow-hidden ${isOver ? 'ring-2 ring-primary bg-primary/5 shadow-[inset_0_0_50px_rgba(232,93,63,0.1)]' : 'shadow-lg'}`}>
+      {isOver && <div className="absolute inset-0 bg-primary/5 blur-[20px] pointer-events-none" />}
+      <div className="flex items-center justify-between mb-6 px-2 relative z-10">
+        <h3 className="font-serif text-xl tracking-tight text-foreground">{title}</h3>
+        <span className="text-xs font-bold bg-secondary border border-white/10 text-foreground px-3 py-1 rounded-full shadow-inner">{docs.length}</span>
       </div>
       <SortableContext items={docs.map(d => d.id.toString())} strategy={verticalListSortingStrategy}>
-        <div ref={setNodeRef} className="flex-1">
+        <div ref={setNodeRef} className="flex-1 relative z-10">
           {docs.map(doc => (
             <SortableDocumentItem key={doc.id} doc={doc} onDelete={onDelete} />
           ))}
           {docs.length === 0 && (
-            <div className="h-24 border-2 border-dashed border-border rounded-xl flex items-center justify-center text-sm text-muted-foreground">
+            <div className="h-32 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center text-sm font-medium text-muted-foreground/50 bg-secondary/20">
               Drag documents here
             </div>
           )}
@@ -129,8 +131,6 @@ export default function Documents() {
     const targetColumn = resolveTargetColumn(String(over.id));
     if (!targetColumn) return;
 
-    // Build the target column's ordered list (excluding the active item), then
-    // insert the active item at the drop position.
     const columnItems = docs
       .filter(d => d.status === targetColumn && d.id !== activeId)
       .sort((a, b) => a.orderIndex - b.orderIndex);
@@ -144,7 +144,6 @@ export default function Documents() {
     const reordered = [...columnItems];
     reordered.splice(insertAt, 0, activeItem);
 
-    // Persist any item whose status or orderIndex changed.
     const updates: { id: number; data: { status?: DocStatus; orderIndex?: number } }[] = [];
     reordered.forEach((doc, index) => {
       const statusChanged = doc.status !== targetColumn;
@@ -183,32 +182,37 @@ export default function Documents() {
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
-        <Skeleton className="h-[80px] w-1/3" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-[500px]" />
-          <Skeleton className="h-[500px]" />
-          <Skeleton className="h-[500px]" />
+        <Skeleton className="h-[100px] w-1/3 rounded-2xl bg-secondary/50" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+          <Skeleton className="h-[600px] rounded-3xl bg-secondary/50" />
+          <Skeleton className="h-[600px] rounded-3xl bg-secondary/50" />
+          <Skeleton className="h-[600px] rounded-3xl bg-secondary/50" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <h1 className="text-4xl font-serif mb-2">Document Vault</h1>
-          <p className="text-muted-foreground max-w-2xl">
+    <div className="max-w-7xl mx-auto space-y-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <h1 className="text-4xl md:text-5xl font-serif mb-3 tracking-tight text-foreground">Document Vault</h1>
+          <p className="text-muted-foreground text-lg max-w-2xl font-light">
             A secure place to collect and organize your financial documents for lending and verification.
           </p>
-        </div>
-        <Button onClick={() => { setNewDoc({ name: "", category: "Income", status: "needed" }); setIsDialogOpen(true); }} className="rounded-full">
-          <Plus className="w-4 h-4 mr-2" /> Add Document Requirement
-        </Button>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
+          <Button onClick={() => { setNewDoc({ name: "", category: "Income", status: "needed" }); setIsDialogOpen(true); }} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all h-11 px-6">
+            <Plus className="w-4 h-4 mr-2" /> Add Requirement
+          </Button>
+        </motion.div>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start"
+        >
           {COLUMNS.map(col => {
             const columnDocs = (docs || [])
               .filter(d => d.status === col.id)
@@ -217,24 +221,24 @@ export default function Documents() {
               <DroppableColumn key={col.id} id={col.id} title={col.title} docs={columnDocs} onDelete={handleDelete} />
             );
           })}
-        </div>
+        </motion.div>
       </DndContext>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Document Requirement</DialogTitle>
+        <DialogContent className="sm:max-w-[450px] bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl rounded-3xl">
+          <DialogHeader className="pb-4 border-b border-white/5">
+            <DialogTitle className="text-2xl font-serif tracking-tight">Add Requirement</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Document Name</Label>
-              <Input id="name" value={newDoc.name} onChange={e => setNewDoc({...newDoc, name: e.target.value})} placeholder="e.g. 2023 W2 Form" />
+          <div className="grid gap-6 py-6">
+            <div className="space-y-3">
+              <Label htmlFor="name" className="text-muted-foreground uppercase tracking-wider text-xs font-semibold">Document Name</Label>
+              <Input id="name" className="bg-secondary/50 border-white/5 focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl h-12" value={newDoc.name} onChange={e => setNewDoc({...newDoc, name: e.target.value})} placeholder="e.g. 2023 W2 Form" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
+            <div className="space-y-3">
+              <Label htmlFor="category" className="text-muted-foreground uppercase tracking-wider text-xs font-semibold">Category</Label>
               <Select value={newDoc.category} onValueChange={(val) => setNewDoc({...newDoc, category: val})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="bg-secondary/50 border-white/5 rounded-xl h-12"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-card border-white/10 rounded-xl">
                   <SelectItem value="Income">Income</SelectItem>
                   <SelectItem value="Assets">Assets</SelectItem>
                   <SelectItem value="Identity">Identity</SelectItem>
@@ -244,11 +248,11 @@ export default function Documents() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Initial Status</Label>
+            <div className="space-y-3">
+              <Label htmlFor="status" className="text-muted-foreground uppercase tracking-wider text-xs font-semibold">Initial Status</Label>
               <Select value={newDoc.status} onValueChange={(val) => setNewDoc({...newDoc, status: val})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="bg-secondary/50 border-white/5 rounded-xl h-12"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-card border-white/10 rounded-xl">
                   <SelectItem value="needed">Action Needed</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="complete">Complete</SelectItem>
@@ -256,9 +260,9 @@ export default function Documents() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={createDoc.isPending || !newDoc.name}>
+          <DialogFooter className="pt-4 border-t border-white/5">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-full px-6">Cancel</Button>
+            <Button onClick={handleSave} disabled={createDoc.isPending || !newDoc.name} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8">
               {createDoc.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save
             </Button>

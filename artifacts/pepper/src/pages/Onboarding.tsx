@@ -7,11 +7,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, ArrowRight, Loader2, Check } from "lucide-react";
+import { Mic, MicOff, ArrowRight, Loader2, Check, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 
@@ -33,7 +33,7 @@ export default function Onboarding() {
   const updateProfile = useUpdateProfile();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const { dictateStart, dictateStop, dictating, setVoice } = usePepper();
+  const { dictateStart, dictateStop, dictating, setVoice, status } = usePepper();
 
   const [step, setStep] = useState(0);
 
@@ -135,245 +135,269 @@ export default function Onboarding() {
   };
 
   if (isProfileLoading) {
-    return <div className="flex h-[80vh] items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <div className="mb-8">
-        <div className="flex gap-2 mb-4">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center py-12 px-4 relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-2xl relative z-10">
+        
+        {/* Pepper Assistant Avatar / Header */}
+        <div className="flex flex-col items-center mb-12">
+          <div className="relative mb-6">
+            <div className={`w-20 h-20 rounded-full border border-border/50 flex items-center justify-center bg-card shadow-[0_0_30px_rgba(0,0,0,0.5)] ${status !== 'idle' ? 'shadow-[0_0_30px_rgba(232,93,63,0.3)]' : ''} transition-shadow duration-500`}>
+              {status === "listening" && <span className="absolute -inset-2 rounded-full border border-primary animate-ping" />}
+              {status === "speaking" && <span className="absolute -inset-2 rounded-full border border-primary opacity-50 animate-pulse" />}
+              <Sparkles className={`w-8 h-8 ${status !== 'idle' ? 'text-primary' : 'text-foreground'}`} />
+            </div>
+          </div>
+          <h1 className="text-4xl font-serif text-foreground text-center mb-2 tracking-tight">Hi, I'm Pepper.</h1>
+          <p className="text-muted-foreground text-center max-w-md">I am your financial command operator. Let's set up your wealth profile.</p>
+        </div>
+
+        <div className="mb-8 flex gap-3">
           {steps.map((_, i) => (
-            <div key={i} className={`h-2 flex-1 rounded-full ${i <= step ? 'bg-primary' : 'bg-primary/20'}`} />
+            <div key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? 'bg-primary shadow-[0_0_10px_rgba(232,93,63,0.5)]' : 'bg-secondary'}`} />
           ))}
         </div>
-      </div>
 
-      <Card className="border-border/50 shadow-md">
-        <CardContent className="p-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="mb-8">
-                <h1 className="text-3xl font-serif text-primary mb-2">{steps[step].title}</h1>
-                <p className="text-muted-foreground">{steps[step].description}</p>
-              </div>
+        <Card className="bg-card/50 backdrop-blur-xl border-white/5 shadow-2xl rounded-3xl overflow-hidden relative">
+          {/* Subtle card inner glow */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-50 pointer-events-none" />
+          
+          <CardContent className="p-8 md:p-10 relative z-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 20, filter: "blur(4px)" }}
+                animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, x: -20, filter: "blur(4px)" }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <div className="mb-10 text-center">
+                  <h2 className="text-2xl font-serif text-foreground mb-3">{steps[step].title}</h2>
+                  <p className="text-muted-foreground text-sm">{steps[step].description}</p>
+                </div>
 
-              <Form {...form}>
-                <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-                  {step === 0 && (
-                    <FormField
-                      control={form.control}
-                      name="displayName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <div className="flex gap-2">
-                            <FormControl>
-                              <Input placeholder="e.g. Alex" {...field} className="text-lg py-6" />
-                            </FormControl>
-                            <Button 
-                              type="button"
-                              variant={dictating ? "destructive" : "secondary"}
-                              size="icon"
-                              className={`shrink-0 h-auto w-12 ${dictating ? 'animate-pulse' : ''}`}
-                              onClick={() => handleDictate("displayName")}
-                            >
-                              {dictating ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                            </Button>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
-                  {step === 1 && (
-                    <div className="space-y-6">
+                <Form {...form}>
+                  <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+                    {step === 0 && (
                       <FormField
                         control={form.control}
-                        name="monthlyIncome"
+                        name="displayName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Monthly Income (After Tax)</FormLabel>
-                            <div className="relative flex gap-2">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                            <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">First Name</FormLabel>
+                            <div className="flex gap-3">
                               <FormControl>
-                                <Input type="number" placeholder="5000" className="pl-8 text-lg py-6" {...field} />
+                                <Input placeholder="e.g. Alex" {...field} className="text-lg py-7 px-5 bg-secondary/30 border-white/5 rounded-2xl focus:bg-secondary/50 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted-foreground/40" />
                               </FormControl>
-                              <Button type="button" variant={dictating ? "destructive" : "secondary"} size="icon" className="shrink-0 h-auto w-12" onClick={() => handleDictate("monthlyIncome")}>
-                                <Mic className="w-5 h-5" />
-                              </Button>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="monthlyExpenses"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Monthly Expenses</FormLabel>
-                            <div className="relative flex gap-2">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <FormControl>
-                                <Input type="number" placeholder="3000" className="pl-8 text-lg py-6" {...field} />
-                              </FormControl>
-                              <Button type="button" variant={dictating ? "destructive" : "secondary"} size="icon" className="shrink-0 h-auto w-12" onClick={() => handleDictate("monthlyExpenses")}>
-                                <Mic className="w-5 h-5" />
-                              </Button>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  )}
-
-                  {step === 2 && (
-                    <div className="space-y-6">
-                      <FormField
-                        control={form.control}
-                        name="cashSavings"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Liquid Cash Savings</FormLabel>
-                            <div className="relative flex gap-2">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <FormControl>
-                                <Input type="number" placeholder="10000" className="pl-8 text-lg py-6" {...field} />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="otherAssets"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Other Assets (Stocks, 401k, etc)</FormLabel>
-                            <div className="relative flex gap-2">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <FormControl>
-                                <Input type="number" placeholder="50000" className="pl-8 text-lg py-6" {...field} />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="totalDebt"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Total Debt (Excluding Mortgages)</FormLabel>
-                            <div className="relative flex gap-2">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <FormControl>
-                                <Input type="number" placeholder="15000" className="pl-8 text-lg py-6" {...field} />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  )}
-
-                  {step === 3 && (
-                    <div className="space-y-8">
-                      <FormField
-                        control={form.control}
-                        name="creditScore"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex justify-between items-center mb-4">
-                              <FormLabel className="text-base">Estimated Credit Score</FormLabel>
-                              <span className="text-2xl font-bold text-primary">{field.value}</span>
-                            </div>
-                            <FormControl>
-                              <Slider
-                                min={300}
-                                max={850}
-                                step={10}
-                                value={[field.value]}
-                                onValueChange={(vals) => field.onChange(vals[0])}
-                                className="py-4"
-                              />
-                            </FormControl>
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>300 (Poor)</span>
-                              <span>850 (Excellent)</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="preferredVoice"
-                        render={({ field }) => (
-                          <FormItem className="space-y-3">
-                            <FormLabel className="text-base">Pepper's Voice</FormLabel>
-                            <FormControl>
-                              <RadioGroup
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                className="flex gap-4"
+                              <Button 
+                                type="button"
+                                variant={dictating ? "destructive" : "secondary"}
+                                size="icon"
+                                className={`shrink-0 h-auto w-14 rounded-2xl border border-white/5 ${dictating ? 'animate-pulse shadow-[0_0_20px_rgba(255,0,0,0.3)]' : 'hover:bg-white/10'}`}
+                                onClick={() => handleDictate("displayName")}
                               >
-                                <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-xl flex-1 cursor-pointer hover:bg-muted/50 [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5 transition-colors">
-                                  <FormControl>
-                                    <RadioGroupItem value="female" />
-                                  </FormControl>
-                                  <FormLabel className="font-medium cursor-pointer">Warm & Professional (Female)</FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-xl flex-1 cursor-pointer hover:bg-muted/50 [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5 transition-colors">
-                                  <FormControl>
-                                    <RadioGroupItem value="male" />
-                                  </FormControl>
-                                  <FormLabel className="font-medium cursor-pointer">Calm & Confident (Male)</FormLabel>
-                                </FormItem>
-                              </RadioGroup>
-                            </FormControl>
+                                {dictating ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-foreground" />}
+                              </Button>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-                  )}
-                </form>
-              </Form>
-            </motion.div>
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+                    )}
 
-      <div className="mt-8 flex justify-between">
-        <Button 
-          variant="ghost" 
-          onClick={() => setStep(s => Math.max(0, s - 1))}
-          disabled={step === 0 || updateProfile.isPending}
-        >
-          Back
-        </Button>
-        <Button 
-          onClick={handleNext} 
-          disabled={updateProfile.isPending}
-          className="rounded-full px-8"
-        >
-          {updateProfile.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {step === steps.length - 1 ? "Complete Profile" : "Continue"}
-          {step === steps.length - 1 ? <Check className="w-4 h-4 ml-2" /> : <ArrowRight className="w-4 h-4 ml-2" />}
-        </Button>
+                    {step === 1 && (
+                      <div className="space-y-8">
+                        <FormField
+                          control={form.control}
+                          name="monthlyIncome"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">Monthly Income (After Tax)</FormLabel>
+                              <div className="relative flex gap-3">
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg font-medium">$</span>
+                                <FormControl>
+                                  <Input type="number" placeholder="5000" className="pl-10 text-lg py-7 px-5 bg-secondary/30 border-white/5 rounded-2xl focus:bg-secondary/50 focus:ring-primary/30 transition-all" {...field} />
+                                </FormControl>
+                                <Button type="button" variant={dictating ? "destructive" : "secondary"} size="icon" className={`shrink-0 h-auto w-14 rounded-2xl border border-white/5 ${dictating ? 'animate-pulse' : 'hover:bg-white/10'}`} onClick={() => handleDictate("monthlyIncome")}>
+                                  {dictating ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-foreground" />}
+                                </Button>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="monthlyExpenses"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">Monthly Expenses</FormLabel>
+                              <div className="relative flex gap-3">
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg font-medium">$</span>
+                                <FormControl>
+                                  <Input type="number" placeholder="3000" className="pl-10 text-lg py-7 px-5 bg-secondary/30 border-white/5 rounded-2xl focus:bg-secondary/50 focus:ring-primary/30 transition-all" {...field} />
+                                </FormControl>
+                                <Button type="button" variant={dictating ? "destructive" : "secondary"} size="icon" className={`shrink-0 h-auto w-14 rounded-2xl border border-white/5 ${dictating ? 'animate-pulse' : 'hover:bg-white/10'}`} onClick={() => handleDictate("monthlyExpenses")}>
+                                  {dictating ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-foreground" />}
+                                </Button>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    {step === 2 && (
+                      <div className="space-y-8">
+                        <FormField
+                          control={form.control}
+                          name="cashSavings"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">Liquid Cash Savings</FormLabel>
+                              <div className="relative flex gap-3">
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg font-medium">$</span>
+                                <FormControl>
+                                  <Input type="number" placeholder="10000" className="pl-10 text-lg py-7 px-5 bg-secondary/30 border-white/5 rounded-2xl focus:bg-secondary/50 focus:ring-primary/30 transition-all" {...field} />
+                                </FormControl>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="otherAssets"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">Other Assets (Stocks, 401k, etc)</FormLabel>
+                              <div className="relative flex gap-3">
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg font-medium">$</span>
+                                <FormControl>
+                                  <Input type="number" placeholder="50000" className="pl-10 text-lg py-7 px-5 bg-secondary/30 border-white/5 rounded-2xl focus:bg-secondary/50 focus:ring-primary/30 transition-all" {...field} />
+                                </FormControl>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="totalDebt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">Total Debt (Excluding Mortgages)</FormLabel>
+                              <div className="relative flex gap-3">
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg font-medium">$</span>
+                                <FormControl>
+                                  <Input type="number" placeholder="15000" className="pl-10 text-lg py-7 px-5 bg-secondary/30 border-white/5 rounded-2xl focus:bg-secondary/50 focus:ring-primary/30 transition-all" {...field} />
+                                </FormControl>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    {step === 3 && (
+                      <div className="space-y-10">
+                        <FormField
+                          control={form.control}
+                          name="creditScore"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex justify-between items-end mb-6">
+                                <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">Estimated Credit Score</FormLabel>
+                                <span className="text-4xl font-serif text-primary tracking-tight">{field.value}</span>
+                              </div>
+                              <FormControl>
+                                <div className="px-2">
+                                  <Slider
+                                    min={300}
+                                    max={850}
+                                    step={10}
+                                    value={[field.value]}
+                                    onValueChange={(vals) => field.onChange(vals[0])}
+                                    className="py-4"
+                                  />
+                                </div>
+                              </FormControl>
+                              <div className="flex justify-between text-xs text-muted-foreground px-2 font-medium">
+                                <span>300 (Poor)</span>
+                                <span>850 (Excellent)</span>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="preferredVoice"
+                          render={({ field }) => (
+                            <FormItem className="space-y-4">
+                              <FormLabel className="text-muted-foreground uppercase tracking-wider text-xs font-semibold ml-1">Pepper's Voice</FormLabel>
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                  className="flex flex-col sm:flex-row gap-4"
+                                >
+                                  <FormItem className={`flex items-center space-x-3 space-y-0 p-5 border border-white/5 rounded-2xl flex-1 cursor-pointer transition-all ${field.value === 'female' ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(232,93,63,0.1)]' : 'bg-secondary/30 hover:bg-secondary/50'}`}>
+                                    <FormControl>
+                                      <RadioGroupItem value="female" className="text-primary border-muted-foreground" />
+                                    </FormControl>
+                                    <FormLabel className="font-medium cursor-pointer text-foreground">Warm & Professional (Female)</FormLabel>
+                                  </FormItem>
+                                  <FormItem className={`flex items-center space-x-3 space-y-0 p-5 border border-white/5 rounded-2xl flex-1 cursor-pointer transition-all ${field.value === 'male' ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(232,93,63,0.1)]' : 'bg-secondary/30 hover:bg-secondary/50'}`}>
+                                    <FormControl>
+                                      <RadioGroupItem value="male" className="text-primary border-muted-foreground" />
+                                    </FormControl>
+                                    <FormLabel className="font-medium cursor-pointer text-foreground">Calm & Confident (Male)</FormLabel>
+                                  </FormItem>
+                                </RadioGroup>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </form>
+                </Form>
+              </motion.div>
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+
+        <div className="mt-8 flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            onClick={() => setStep(s => Math.max(0, s - 1))}
+            disabled={step === 0 || updateProfile.isPending}
+            className="text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-full px-6"
+          >
+            Back
+          </Button>
+          <Button 
+            onClick={handleNext} 
+            disabled={updateProfile.isPending}
+            className="rounded-full px-8 h-12 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all font-medium text-base tracking-wide"
+          >
+            {updateProfile.isPending && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+            {step === steps.length - 1 ? "Initialize Profile" : "Continue"}
+            {step === steps.length - 1 ? <Check className="w-5 h-5 ml-2" /> : <ArrowRight className="w-5 h-5 ml-2" />}
+          </Button>
+        </div>
       </div>
     </div>
   );

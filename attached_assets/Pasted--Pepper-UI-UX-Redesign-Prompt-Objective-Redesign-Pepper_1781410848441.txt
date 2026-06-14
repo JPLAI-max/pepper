@@ -1,0 +1,316 @@
+# Pepper UI / UX Redesign Prompt
+
+## Objective
+
+Redesign Pepper into a modern AI-powered real estate wealth operating system.
+
+The interface should feel like a mix of:
+
+* E*TRADE financial dashboard
+* Apple simplicity
+* Tony Stark / Jarvis AI assistant
+* High-end fintech platform
+* Real estate wealth command center
+
+The platform should feel futuristic, intelligent, trustworthy, and approachable.
+
+Not childish.
+Not pink.
+Not generic SaaS.
+Not overly complicated.
+
+---
+
+# Core Design Direction
+
+Pepper should feel like the new way people find money, qualify for financing, invest in real estate, and build wealth.
+
+The interface should be:
+
+* Clean
+* Modern
+* High-tech
+* Premium
+* Simple
+* Easy to understand
+* Voice-first
+* Mobile-first
+* Friendly to both men and women
+* Professional enough for financial products
+
+---
+
+# Color Direction
+
+Move away from soft teal-only branding.
+
+Use a warmer, more premium palette:
+
+## Primary
+
+Deep charcoal / near black
+
+## Accent
+
+Warm orange-red / ember red
+
+Avoid bright red.
+Avoid pink.
+Avoid neon.
+
+Suggested colors:
+
+* Background: #0B0F14
+* Card Background: #121821
+* Primary Text: #F5F3EF
+* Secondary Text: #A8B0BA
+* Accent Red-Orange: #E85D3F
+* Warm Gold Accent: #D9A441
+* Success Green: #3FA37D
+
+The interface should feel warm but powerful.
+
+---
+
+# AI Interface Direction
+
+The AI assistant should be central to the product.
+
+It should feel like a Jarvis-style financial operator.
+
+Add a visual AI orb / voice interface that appears throughout the site.
+
+The AI orb should:
+
+* Glow subtly
+* Animate when listening
+* Pulse when speaking
+* Be available from every screen
+* Allow users to type or dictate answers
+
+The AI should feel like:
+
+"Your financial command operator."
+
+Not just a chatbot.
+
+---
+
+# Voice Interface
+
+Add voice-first functionality as a core UX concept.
+
+Users should be able to:
+
+* Tap microphone
+* Dictate answers
+* Hear responses read back
+* Choose male or female AI voice
+* Continue by typing if preferred
+
+The voice UI should be present:
+
+* On onboarding
+* In the dashboard
+* On roadmap screens
+* During document collection
+* During product recommendations
+
+The user should never feel forced to fill out long forms.
+
+The AI conversation should fill the intake automatically in the background.
+
+---
+
+# Onboarding Experience
+
+Replace traditional intake forms with conversational onboarding.
+
+Opening screen:
+
+"Hi, I'm Pepper. What are you trying to accomplish?"
+
+Suggested quick buttons:
+
+* Buy my first home
+* Buy an investment property
+* Generate passive income
+* Pay off debt
+* Improve my credit
+* Access capital
+* Build wealth
+
+The AI should then ask follow-up questions naturally and populate the user's profile.
+
+---
+
+# Dashboard Concept
+
+The dashboard should feel like a command center.
+
+Main sections:
+
+## Financial Snapshot
+
+* Net Worth
+* Monthly Cash Flow
+* Debt
+* Assets
+* Credit Score
+* Readiness Score
+
+## Roadmap
+
+* Current Step
+* Next Step
+* Timeline
+* Progress
+
+## Opportunities
+
+* Loan options
+* Investment options
+* Income property options
+* Refinance opportunities
+* Margin eligibility in future
+
+## Documents
+
+A simple filing system.
+
+Users should be able to drag and drop documents into categories.
+
+Document folders:
+
+* ID
+* Tax Returns
+* Bank Statements
+* Credit Documents
+* Property Documents
+* Loan Documents
+* Investment Documents
+
+Make this extremely simple and visual.
+
+---
+
+# Navigation
+
+Keep navigation minimal.
+
+Suggested navigation:
+
+* Command Center
+* Goals
+* Roadmap
+* Readiness
+* Opportunities
+* Documents
+* Pepper AI
+
+On mobile, the AI button should be always available at the bottom center.
+
+---
+
+# Visual Style
+
+Use:
+
+* Dark mode default
+* Soft glowing accents
+* Glassmorphism cards
+* Rounded but not childish corners
+* Smooth transitions
+* Minimal icons
+* High contrast text
+* Large readable numbers
+* Premium financial typography
+
+Avoid:
+
+* Cartoon illustrations
+* Pink tones
+* Generic dashboard templates
+* Too much teal
+* Cluttered charts
+* Overly playful branding
+
+---
+
+# Mobile Experience
+
+Mobile should feel like talking to an intelligent assistant.
+
+The first mobile screen should prioritize:
+
+* AI orb
+* Voice button
+* Goal selection
+* Current roadmap status
+* Next best action
+
+The user should be able to run most of the app through voice.
+
+---
+
+# Personality of Pepper
+
+Pepper should be:
+
+* Friendly
+* Direct
+* Informative
+* Calm
+* Smart
+* Trustworthy
+* Encouraging
+
+Pepper should not be:
+
+* Salesy
+* Robotic
+* Judgmental
+* Overly playful
+* Financially intimidating
+
+---
+
+# Product Feeling
+
+The user should feel:
+
+"I finally understand what to do next."
+
+Not:
+
+"I am filling out another loan application."
+
+---
+
+# Key Design Principle
+
+Heavy backend functionality.
+
+Simple frontend experience.
+
+The platform may handle complex underwriting, roadmap generation, loan matching, investment recommendations, document management, and financial scoring in the backend.
+
+But the user experience should feel simple:
+
+Talk to Pepper.
+Answer questions.
+See your roadmap.
+Upload documents.
+Take the next step.
+
+---
+
+# Final Direction
+
+Redesign the platform as a futuristic but approachable real estate wealth command center.
+
+The AI assistant should be the heart of the product.
+
+The dashboard should feel premium, intelligent, and action-oriented.
+
+This should look like the future of financial guidance, lending, and real estate investing.

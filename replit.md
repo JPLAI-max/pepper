@@ -43,6 +43,7 @@ Financial snapshot/onboarding, educational readiness scores (homeownership/inves
 
 - Two selectable assistant voices (male AND female); friendly, non-judgmental tone.
 - Aesthetic target: E-Trade + Apple + Jarvis — high-tech but extremely approachable for everyone. No emojis in the UI.
+- Visual direction (current): dark "wealth command center" — ember red-orange (#E85D3F) + warm gold (#D9A441) + success green (#3FA37D) on charcoal (#0B0F14 bg, #121821 cards), glassmorphism cards, large serif numbers, a glowing Jarvis-style AI orb. Dark is the default theme. Nav label for Dashboard is "Command Center".
 
 ## Gotchas
 
