@@ -7,7 +7,6 @@ import documentsRouter from "./documents";
 import opportunitiesRouter from "./opportunities";
 import dashboardRouter from "./dashboard";
 import openaiRouter from "./openai";
-import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -19,6 +18,5 @@ router.use(documentsRouter);
 router.use(opportunitiesRouter);
 router.use(dashboardRouter);
 router.use(openaiRouter);
-router.use(storageRouter);
 
 export default router;

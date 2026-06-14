@@ -7,13 +7,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PepperAssistant } from "@/components/pepper/PepperAssistant";
 import { useGetProfile } from "@workspace/api-client-react";
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
 
-// Pages
+// Placeholder pages
 import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
-import Discovery from "@/pages/Discovery";
+
 import Dashboard from "@/pages/Dashboard";
+import Onboarding from "@/pages/Onboarding";
 import Goals from "@/pages/Goals";
 import Roadmap from "@/pages/Roadmap";
 import Readiness from "@/pages/Readiness";
@@ -27,15 +26,16 @@ function ProtectedRoute({ component: Component, path }: { component: any, path: 
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    // We only enforce that non-onboarded users are directed to the magic opening
-    if (!isLoading && profile && !profile.onboarded && location !== "/" && location !== "/discovery") {
+    if (!isLoading && profile && !profile.onboarded && location !== "/onboarding") {
+      setLocation("/onboarding");
+    } else if (!isLoading && profile && profile.onboarded && location === "/onboarding") {
       setLocation("/");
     }
   }, [profile, isLoading, location, setLocation]);
 
-  if (isLoading) return <div className="h-screen w-full flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-8 h-8" /></div>;
+  if (isLoading) return null;
 
-  if (location === "/" || location === "/discovery") {
+  if (location === "/onboarding") {
     return <Component />;
   }
 
@@ -49,14 +49,11 @@ function ProtectedRoute({ component: Component, path }: { component: any, path: 
 function Router() {
   return (
     <Switch>
+      <Route path="/onboarding">
+        <ProtectedRoute component={Onboarding} path="/onboarding" />
+      </Route>
       <Route path="/">
-        <ProtectedRoute component={Home} path="/" />
-      </Route>
-      <Route path="/discovery">
-        <ProtectedRoute component={Discovery} path="/discovery" />
-      </Route>
-      <Route path="/dashboard">
-        <ProtectedRoute component={Dashboard} path="/dashboard" />
+        <ProtectedRoute component={Dashboard} path="/" />
       </Route>
       <Route path="/goals">
         <ProtectedRoute component={Goals} path="/goals" />

@@ -14,13 +14,5 @@ export interface Document {
   orderIndex: number;
   /** @nullable */
   note?: string | null;
-  /** @nullable */
-  fileUrl?: string | null;
-  /** @nullable */
-  mimeType?: string | null;
-  /** @nullable */
-  sizeBytes?: number | null;
-  /** @nullable */
-  uploadedAt?: Date | null;
   createdAt: Date;
 }

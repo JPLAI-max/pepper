@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useListDocuments, useCreateDocument, useUpdateDocument, useDeleteDocument, useRequestUploadUrl,
+  useListDocuments, useCreateDocument, useUpdateDocument, useDeleteDocument,
   getListDocumentsQueryKey, getGetDashboardSummaryQueryKey
 } from "@workspace/api-client-react";
 import {
@@ -11,7 +11,7 @@ import {
   SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, FileText, Trash2, GripVertical, Loader2, Upload, Download } from "lucide-react";
+import { Plus, FileText, Trash2, GripVertical, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,17 +29,7 @@ interface Doc {
   category: string;
   status: string;
   orderIndex: number;
-  fileUrl?: string | null;
-  mimeType?: string | null;
-  sizeBytes?: number | null;
 }
-
-const formatSize = (bytes?: number | null) => {
-  if (!bytes) return null;
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
 
 const SortableDocumentItem = ({ doc, onDelete }: { doc: Doc, onDelete: (id: number) => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: doc.id.toString() });
@@ -62,22 +52,8 @@ const SortableDocumentItem = ({ doc, onDelete }: { doc: Doc, onDelete: (id: numb
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="font-serif text-lg tracking-tight truncate text-foreground mb-0.5">{doc.name}</h4>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-            {doc.category}{doc.fileUrl ? ` • ${formatSize(doc.sizeBytes) ?? "File"}` : ""}
-          </p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">{doc.category}</p>
         </div>
-        {doc.fileUrl && (
-          <a
-            href={`/api/storage${doc.fileUrl}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="opacity-0 group-hover:opacity-100 shrink-0 transition-all rounded-full p-2 text-muted-foreground hover:text-primary hover:bg-primary/10"
-            title="View / download"
-          >
-            <Download className="w-4 h-4" />
-          </a>
-        )}
         <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 transition-all rounded-full" onClick={() => onDelete(doc.id)}>
           <Trash2 className="w-4 h-4" />
         </Button>
@@ -123,14 +99,10 @@ export default function Documents() {
   const createDoc = useCreateDocument();
   const updateDoc = useUpdateDocument();
   const deleteDoc = useDeleteDocument();
-  const requestUploadUrl = useRequestUploadUrl();
   const queryClient = useQueryClient();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newDoc, setNewDoc] = useState({ name: "", category: "Income", status: "needed" });
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -207,49 +179,6 @@ export default function Documents() {
     deleteDoc.mutate({ id }, { onSuccess: invalidateQueries });
   };
 
-  const uploadFiles = async (files: FileList | File[]) => {
-    const list = Array.from(files);
-    if (list.length === 0) return;
-    setUploadError(null);
-    setUploading(true);
-    try {
-      let nextIndex = (docs || []).filter((d) => d.status === "complete").length;
-      for (const file of list) {
-        const contentType = file.type || "application/octet-stream";
-        const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
-          data: { name: file.name, size: file.size, contentType },
-        });
-        const putRes = await fetch(uploadURL, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": contentType },
-        });
-        if (!putRes.ok) throw new Error(`Upload failed (${putRes.status})`);
-        await createDoc.mutateAsync({
-          data: {
-            name: file.name,
-            category: "Other" as any,
-            status: "complete" as any,
-            fileUrl: objectPath,
-            mimeType: contentType,
-            sizeBytes: file.size,
-            orderIndex: nextIndex++,
-          },
-        });
-      }
-      invalidateQueries();
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) uploadFiles(e.target.files);
-    e.target.value = "";
-  };
-
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
@@ -272,23 +201,12 @@ export default function Documents() {
             A secure place to collect and organize your financial documents for lending and verification.
           </p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="flex gap-3">
-          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileInput} />
-          <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all h-11 px-6">
-            {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-            {uploading ? "Uploading..." : "Upload File"}
-          </Button>
-          <Button variant="outline" onClick={() => { setNewDoc({ name: "", category: "Income", status: "needed" }); setIsDialogOpen(true); }} className="rounded-full border-white/10 bg-secondary/50 hover:bg-secondary text-foreground transition-all h-11 px-6">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
+          <Button onClick={() => { setNewDoc({ name: "", category: "Income", status: "needed" }); setIsDialogOpen(true); }} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all h-11 px-6">
             <Plus className="w-4 h-4 mr-2" /> Add Requirement
           </Button>
         </motion.div>
       </div>
-
-      {uploadError && (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive px-5 py-3 text-sm">
-          {uploadError}
-        </div>
-      )}
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
         <motion.div 

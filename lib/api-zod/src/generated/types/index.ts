@@ -7,9 +7,6 @@
  */
 
 export * from './dashboardSummary';
-export * from './discoveryChecklist';
-export * from './discoveryInput';
-export * from './discoveryResult';
 export * from './document';
 export * from './documentInput';
 export * from './documentInputCategory';
@@ -44,8 +41,3 @@ export * from './roadmapInputStatus';
 export * from './roadmapStep';
 export * from './roadmapUpdate';
 export * from './roadmapUpdateStatus';
-export * from './speakInput';
-export * from './speakInputVoice';
-export * from './speakOutput';
-export * from './uploadUrlRequest';
-export * from './uploadUrlResponse';

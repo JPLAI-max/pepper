@@ -1,16 +1,15 @@
 import React from "react";
 import { Link } from "wouter";
-import { useGetDashboardSummary, useGetReadinessScores } from "@workspace/api-client-react";
+import { useGetDashboardSummary } from "@workspace/api-client-react";
 import { usePepper } from "@/pepper";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Target, Shield, FileText, ArrowRight, Wallet, Banknote, ChevronRight, CheckCircle2, TrendingUp } from "lucide-react";
+import { Sparkles, Target, Shield, FileText, ArrowRight, Wallet, Banknote, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const { data: summary, isLoading } = useGetDashboardSummary();
-  const { data: scores } = useGetReadinessScores();
   const { setOpen } = usePepper();
 
   if (isLoading) {
@@ -146,67 +145,6 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </div>
-
-      {/* Readiness Scores — all 6 */}
-      {scores && scores.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-serif text-2xl tracking-tight text-foreground">Readiness</h2>
-            <Link href="/readiness" className="text-sm text-primary font-medium flex items-center hover:underline">
-              Full breakdown <ArrowRight className="w-4 h-4 ml-1" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {scores.map((s) => (
-              <Card key={s.key} className="border-white/5 bg-card/40 backdrop-blur-md rounded-2xl shadow-lg">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</span>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gold">{s.tier}</span>
-                  </div>
-                  <div className="flex items-end gap-1 mb-3">
-                    <span className="text-3xl font-serif text-foreground tracking-tight">{s.score}</span>
-                    <span className="text-sm text-muted-foreground mb-1">/100</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-gold to-primary rounded-full transition-all" style={{ width: `${s.score}%` }} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Curated Opportunities */}
-      {summary.recommendedOpportunities && summary.recommendedOpportunities.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.4 }}>
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-serif text-2xl tracking-tight text-foreground">Curated Opportunities</h2>
-            <Link href="/opportunities" className="text-sm text-primary font-medium flex items-center hover:underline">
-              View all <ArrowRight className="w-4 h-4 ml-1" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {summary.recommendedOpportunities.slice(0, 3).map((opp) => (
-              <Card key={opp.id} className="border-white/5 bg-card/40 backdrop-blur-md rounded-2xl shadow-lg hover:bg-card/60 transition-all group">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">{opp.kind}</span>
-                  </div>
-                  <h3 className="font-serif text-lg text-foreground tracking-tight mb-2 leading-tight">{opp.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-3">{opp.summary}</p>
-                  <div className="flex items-center gap-4 text-sm">
-                    {opp.rate && <span className="text-gold font-medium">{opp.rate}</span>}
-                    {opp.term && <span className="text-muted-foreground">{opp.term}</span>}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </motion.div>
-      )}
 
       {/* Progress Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
