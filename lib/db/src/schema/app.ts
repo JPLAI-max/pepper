@@ -157,6 +157,10 @@ export const roadmapSteps = pgTable("roadmap_steps", {
   // Engine-assigned time horizon (immediate / 30_day / 90_day / 1_year /
   // 5_year). Nullable so a manually created step can omit it.
   horizon: text("horizon"),
+  // Deterministic key derived from the step's horizon + focus (NOT random).
+  // Lets persistRoadmap preserve the user's status across regenerations for
+  // steps whose key survives. Nullable: legacy/manual rows may not have one.
+  stableKey: text("stable_key"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

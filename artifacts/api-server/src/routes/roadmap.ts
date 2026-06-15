@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq } from "drizzle-orm";
 import { db, goals as goalsTable, roadmapSteps } from "@workspace/db";
-import { CreateRoadmapStepBody, UpdateRoadmapStepBody } from "@workspace/api-zod";
+import { UpdateRoadmapStepBody } from "@workspace/api-zod";
 import { getOrCreateProfile } from "../lib/identity";
 import { computeReadiness } from "../lib/scoring";
 import {
@@ -41,6 +41,7 @@ router.get("/roadmap", requireAuth, async (req, res) => {
       ? persisted.map((row) => ({
           id: row.id,
           horizon: (row.horizon ?? "immediate") as RoadmapHorizon,
+          key: row.stableKey ?? "",
           action: row.title,
           detail: row.description,
           status: row.status,
@@ -51,20 +52,10 @@ router.get("/roadmap", requireAuth, async (req, res) => {
   res.json({ ...plan, steps });
 });
 
-router.post("/roadmap", requireAuth, async (req, res) => {
-  const parsed = CreateRoadmapStepBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid roadmap data" });
-    return;
-  }
-  const userId = getSessionUserId(req)!;
-  const created = await db
-    .insert(roadmapSteps)
-    .values({ ...parsed.data, userId })
-    .returning();
-  res.status(201).json(created[0]);
-});
-
+// NOTE: manual step creation (POST /roadmap) is intentionally removed. The
+// roadmap is engine-owned — steps are generated deterministically and
+// reconciled on the recompute path (see lib/roadmap persistRoadmap). PATCH
+// below remains, but only to toggle the status of an existing engine step.
 router.patch("/roadmap/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) {

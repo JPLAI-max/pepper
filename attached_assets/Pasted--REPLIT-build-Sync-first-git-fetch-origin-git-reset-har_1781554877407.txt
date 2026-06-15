@@ -1,0 +1,26 @@
+→ REPLIT (build)
+
+Sync first: git fetch origin && git reset --hard origin/main.
+
+Build — Opportunity matching + roadmap status preservation. Rule-based, educational only. "Tools that may help," never "you qualify," never "buy/invest now." Investment, securities, and margin products are gated as future-only — never actionable in this build.
+
+PART 1 — Roadmap status preservation (resolve the delete-and-rebuild conflict).
+- Give each engine-generated step a stable key derived from its type/focus (deterministic — NOT a random id).
+- Change persistRoadmap from pure delete-and-rebuild to: preserve the existing status for any step whose stable key still exists after regeneration; new steps start not-started; steps no longer relevant are removed.
+- Deprecate manual step creation — disable/remove POST /roadmap step creation. The roadmap is engine-owned. Keep PATCH for status toggles on engine steps only.
+
+PART 2 — Opportunity matching engine (server-side, deterministic — no AI, no randomness).
+- Input: the logged-in user's profile, primary goal, and computed scores.
+- Match relevant tool CATEGORIES via rules (Doc 08 triggers), e.g.:
+  - Homeownership goal + limited cash + moderate credit → FHA (informational).
+  - Strong homeownership readiness → Conventional.
+  - Investor goal + investment readiness above threshold → DSCR (informational).
+  - Homeowner with equity → HELOC / cash-out refinance (informational).
+- Include the "build the foundation first / no action right now" recommendation when readiness is low — sometimes the right answer is do nothing yet.
+- Investment / Property Income Units / margin: show ONLY as "coming later," gated behind the existing flags (SECURITIES_LIVE etc.). Never present them as something to buy or apply for now.
+- Educational framing on every item, tied to the user's roadmap. No "you qualify," no application, no invented numbers.
+
+PART 3 — Endpoint.
+- Add GET /opportunities (requireAuth, scoped to session user) returning the matched categories with educational descriptions. Compute on read — no write side-effect (same discipline as GET /scores). One user can never see another's matches.
+
+Do NOT build the Reveal UI in this task — only the roadmap status fix, the matching engine, and the endpoint.

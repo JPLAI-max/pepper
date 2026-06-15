@@ -19,6 +19,28 @@ recompute is in exactly one place.
 extraction recompute path; make the GET compute an in-memory fallback. Persist
 fns replace user-scoped rows in a transaction and return rows with ids.
 
+# Roadmap is engine-owned: status-preserving reconcile, not delete-and-rebuild
+
+Each generated roadmap step carries a deterministic `stableKey`
+(`"${horizon}:${segment}"`, e.g. `immediate:fund`) persisted in
+`roadmap_steps.stable_key` (nullable). `persistRoadmap` reconciles by key:
+surviving key → UPDATE content/order/horizon but **never** touch `status` (so a
+user's "done" survives regeneration); new key → INSERT as todo; obsolete or
+keyless row → DELETE. It is NOT a delete-and-reinsert (that would reset progress
+and churn ids).
+
+There is no manual step creation: `POST /roadmap` (route + openapi op +
+`RoadmapInput`) is removed. `PATCH /roadmap/:id` is the only client write and is
+**status-only** — `RoadmapUpdate` was narrowed to `{ status }` (required) so a
+client cannot rewrite engine-owned title/order/horizon. Frontend Add/Edit UI was
+removed accordingly.
+
+**Why:** the roadmap is deterministically derived; the only user-owned datum on a
+step is its completion status, which must be preserved across recomputes.
+
+**How to apply:** if you add a step, give it a unique segment so its key is
+stable; never widen the PATCH contract back to arbitrary fields.
+
 # "Never fabricate a figure" in roadmap copy
 
 The roadmap engine (`lib/roadmap.ts`) may only emit numbers that are a stored

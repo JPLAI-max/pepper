@@ -1,28 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { 
-  useGetRoadmap, useCreateRoadmapStep, useUpdateRoadmapStep,
+import {
+  useGetRoadmap, useUpdateRoadmapStep,
   getGetRoadmapQueryKey, getGetDashboardSummaryQueryKey
 } from "@workspace/api-client-react";
-import { CheckCircle2, Circle, Clock, Plus, Loader2, Map } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Map } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
 export default function Roadmap() {
   const { data: plan, isLoading } = useGetRoadmap();
   const steps = plan?.steps;
-  const createStep = useCreateRoadmapStep();
   const updateStep = useUpdateRoadmapStep();
   const queryClient = useQueryClient();
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingStep, setEditingStep] = useState<any>(null);
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
@@ -33,37 +25,6 @@ export default function Roadmap() {
     if (step.id == null) return;
     const newStatus = step.status === 'done' ? 'todo' : 'done';
     updateStep.mutate({ id: step.id, data: { status: newStatus as any } }, { onSuccess: invalidateQueries });
-  };
-
-  const handleSave = () => {
-    if (!editingStep?.title) return;
-    
-    if (editingStep.id) {
-      updateStep.mutate({
-        id: editingStep.id,
-        data: {
-          title: editingStep.title,
-          description: editingStep.description,
-          status: editingStep.status,
-          actionLabel: editingStep.actionLabel
-        }
-      }, { onSuccess: () => { invalidateQueries(); setIsDialogOpen(false); } });
-    } else {
-      createStep.mutate({
-        data: {
-          title: editingStep.title,
-          description: editingStep.description,
-          status: "todo",
-          orderIndex: (steps?.length || 0) + 1,
-          actionLabel: editingStep.actionLabel
-        }
-      }, { onSuccess: () => { invalidateQueries(); setIsDialogOpen(false); } });
-    }
-  };
-
-  const openNewStep = () => {
-    setEditingStep({ title: "", description: "", actionLabel: "" });
-    setIsDialogOpen(true);
   };
 
   if (isLoading) {
@@ -89,9 +50,6 @@ export default function Roadmap() {
           <p className="text-muted-foreground text-lg max-w-2xl font-light">
             A step-by-step personalized plan to reach your wealth building goals.
           </p>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
-          <Button onClick={openNewStep} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] transition-all h-11 px-6"><Plus className="w-4 h-4 mr-2" /> Add Step</Button>
         </motion.div>
       </div>
 
@@ -163,37 +121,6 @@ export default function Roadmap() {
           </motion.div>
         )}
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[550px] bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl rounded-3xl">
-          <DialogHeader className="pb-4 border-b border-white/5">
-            <DialogTitle className="text-2xl font-serif tracking-tight">{editingStep?.id ? 'Edit Step' : 'Add Custom Step'}</DialogTitle>
-          </DialogHeader>
-          {editingStep && (
-            <div className="grid gap-6 py-6">
-              <div className="space-y-3">
-                <Label htmlFor="title" className="text-muted-foreground uppercase tracking-wider text-xs font-semibold">Step Title</Label>
-                <Input id="title" className="bg-secondary/50 border-white/5 focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl h-12" value={editingStep.title} onChange={e => setEditingStep({...editingStep, title: e.target.value})} placeholder="e.g. Open a High-Yield Savings Account" />
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="desc" className="text-muted-foreground uppercase tracking-wider text-xs font-semibold">Description</Label>
-                <Textarea id="desc" className="bg-secondary/50 border-white/5 focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl min-h-[100px] resize-none" value={editingStep.description || ""} onChange={e => setEditingStep({...editingStep, description: e.target.value})} placeholder="What needs to be done?" />
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="action" className="text-muted-foreground uppercase tracking-wider text-xs font-semibold">Call to Action Button (Optional)</Label>
-                <Input id="action" className="bg-secondary/50 border-white/5 focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl h-12" value={editingStep.actionLabel || ""} onChange={e => setEditingStep({...editingStep, actionLabel: e.target.value})} placeholder="e.g. Review Options" />
-              </div>
-            </div>
-          )}
-          <DialogFooter className="pt-4 border-t border-white/5">
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-full px-6">Cancel</Button>
-            <Button onClick={handleSave} disabled={createStep.isPending || updateStep.isPending || !editingStep?.title} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8">
-              {(createStep.isPending || updateStep.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save Step
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

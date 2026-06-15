@@ -236,40 +236,14 @@ export const GetRoadmapResponse = zod.object({
 
 
 /**
- * @summary Create a roadmap step
- */
-
-
-
-export const CreateRoadmapStepBody = zod.object({
-  "title": zod.string().min(1),
-  "description": zod.string().optional(),
-  "status": zod.enum(['todo', 'in_progress', 'done']).optional(),
-  "orderIndex": zod.number().optional(),
-  "actionLabel": zod.string().optional(),
-  "goalId": zod.number().optional(),
-  "horizon": zod.union([zod.literal('immediate'),zod.literal('30_day'),zod.literal('90_day'),zod.literal('1_year'),zod.literal('5_year'),zod.literal(null)]).nullish()
-})
-
-
-/**
  * @summary Update a roadmap step
  */
 export const UpdateRoadmapStepParams = zod.object({
   "id": zod.coerce.number()
 })
 
-
-
-
 export const UpdateRoadmapStepBody = zod.object({
-  "title": zod.string().min(1).optional(),
-  "description": zod.string().optional(),
-  "status": zod.enum(['todo', 'in_progress', 'done']).optional(),
-  "orderIndex": zod.number().optional(),
-  "actionLabel": zod.string().optional(),
-  "goalId": zod.number().optional(),
-  "horizon": zod.union([zod.literal('immediate'),zod.literal('30_day'),zod.literal('90_day'),zod.literal('1_year'),zod.literal('5_year'),zod.literal(null)]).nullish()
+  "status": zod.enum(['todo', 'in_progress', 'done'])
 })
 
 export const UpdateRoadmapStepResponse = zod.object({
@@ -369,6 +343,31 @@ export const ListOpportunitiesResponseItem = zod.object({
   "createdAt": zod.coerce.date()
 })
 export const ListOpportunitiesResponse = zod.array(ListOpportunitiesResponseItem)
+
+
+/**
+ * @summary Deterministic educational opportunity matches for the session user
+ */
+export const GetOpportunityMatchesResponse = zod.object({
+  "goalCategory": zod.string().nullable(),
+  "foundationFirst": zod.boolean(),
+  "matches": zod.array(zod.object({
+  "key": zod.string(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "rationale": zod.string(),
+  "status": zod.enum(['available', 'foundation', 'coming_later'])
+})),
+  "comingLater": zod.array(zod.object({
+  "key": zod.string(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "rationale": zod.string(),
+  "status": zod.enum(['available', 'foundation', 'coming_later'])
+}))
+})
 
 
 /**

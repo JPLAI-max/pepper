@@ -246,23 +246,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RoadmapPlan"
-    post:
-      operationId: createRoadmapStep
-      tags: [roadmap]
-      summary: Create a roadmap step
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RoadmapInput"
-      responses:
-        "201":
-          description: Created step
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoadmapStep"
   /roadmap/{id}:
     patch:
       operationId: updateRoadmapStep
@@ -389,6 +372,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Opportunity"
+  /opportunities/matches:
+    get:
+      operationId: getOpportunityMatches
+      tags: [opportunities]
+      summary: Deterministic educational opportunity matches for the session user
+      responses:
+        "200":
+          description: Matched tool categories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpportunityMatches"
 
   /scores:
     get:
@@ -796,48 +791,17 @@ components:
         - status
         - orderIndex
         - createdAt
-    RoadmapInput:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-        description:
-          type: string
-        status:
-          type: string
-          enum: ["todo", "in_progress", "done"]
-        orderIndex:
-          type: integer
-        actionLabel:
-          type: string
-        goalId:
-          type: integer
-        horizon:
-          type: ["string", "null"]
-          enum: ["immediate", "30_day", "90_day", "1_year", "5_year", null]
-      required:
-        - title
     RoadmapUpdate:
+      # The roadmap is engine-owned: a step's content/order/horizon are derived
+      # deterministically and reconciled on recompute, so the only field a
+      # client may PATCH is its progress status.
       type: object
       properties:
-        title:
-          type: string
-          minLength: 1
-        description:
-          type: string
         status:
           type: string
           enum: ["todo", "in_progress", "done"]
-        orderIndex:
-          type: integer
-        actionLabel:
-          type: string
-        goalId:
-          type: integer
-        horizon:
-          type: ["string", "null"]
-          enum: ["immediate", "30_day", "90_day", "1_year", "5_year", null]
+      required:
+        - status
 
     RoadmapPosition:
       type: object
@@ -1049,6 +1013,50 @@ components:
         - minAmount
         - recommended
         - createdAt
+
+    OpportunityMatch:
+      type: object
+      properties:
+        key:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        rationale:
+          type: string
+        status:
+          type: string
+          enum: ["available", "foundation", "coming_later"]
+      required:
+        - key
+        - category
+        - title
+        - description
+        - rationale
+        - status
+    OpportunityMatches:
+      type: object
+      properties:
+        goalCategory:
+          type: ["string", "null"]
+        foundationFirst:
+          type: boolean
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpportunityMatch"
+        comingLater:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpportunityMatch"
+      required:
+        - goalCategory
+        - foundationFirst
+        - matches
+        - comingLater
 
     ReadinessScore:
       type: object

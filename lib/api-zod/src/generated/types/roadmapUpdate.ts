@@ -5,17 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { RoadmapUpdateHorizon } from './roadmapUpdateHorizon';
 import type { RoadmapUpdateStatus } from './roadmapUpdateStatus';
 
 export interface RoadmapUpdate {
-  /** @minLength 1 */
-  title?: string;
-  description?: string;
-  status?: RoadmapUpdateStatus;
-  orderIndex?: number;
-  actionLabel?: string;
-  goalId?: number;
-  /** @nullable */
-  horizon?: RoadmapUpdateHorizon;
+  status: RoadmapUpdateStatus;
 }

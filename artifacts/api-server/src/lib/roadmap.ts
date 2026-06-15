@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   db,
   goals as goalsTable,
@@ -64,6 +64,12 @@ export interface RoadmapPlanStep {
   detail: string | null;
   status: string;
   order: number;
+  /**
+   * Deterministic key (`<horizon>:<focus>`) identifying what this step IS,
+   * independent of its wording. persistRoadmap uses it to preserve the user's
+   * status across regenerations. Stable across runs for the same situation.
+   */
+  key: string;
   /** Present only when the step is read from a persisted roadmap_steps row. */
   id?: number;
 }
@@ -146,7 +152,7 @@ interface ObstacleCandidate {
 }
 
 /** Pick the user's primary goal: highest priority, then most recent. */
-function primaryGoal(goals: Goal[]): Goal | null {
+export function primaryGoal(goals: Goal[]): Goal | null {
   const active = goals.filter((g) => g.status === "active");
   const pool = active.length > 0 ? active : goals;
   if (pool.length === 0) return null;
@@ -294,9 +300,18 @@ export function computeRoadmap(
   // ---- Horizon steps: specific and grounded -------------------------------
   const steps: RoadmapPlanStep[] = [];
   let order = 0;
-  const add = (horizon: RoadmapHorizon, action: string, detail?: string) => {
+  // `segment` is the deterministic focus of the step (e.g. "fund", "credit").
+  // Combined with the horizon it forms a stable key so status survives
+  // regeneration as long as the step's nature is unchanged.
+  const add = (
+    horizon: RoadmapHorizon,
+    segment: string,
+    action: string,
+    detail?: string,
+  ) => {
     steps.push({
       horizon,
+      key: `${horizon}:${segment}`,
       action,
       detail: detail ?? null,
       status: "todo",
@@ -308,26 +323,31 @@ export function computeRoadmap(
   if (monthlySurplus !== null && monthlySurplus > 0) {
     add(
       "immediate",
+      "fund",
       `Open a dedicated ${noun} account and move your first ${usd(monthlySurplus)} into it this week.`,
     );
   } else if (focus === "credit") {
     add(
       "immediate",
+      "credit",
       "Pull your free credit report from all three bureaus and flag any errors to dispute.",
     );
   } else if (focus === "debt") {
     add(
       "immediate",
+      "debt",
       "List every debt with its balance and interest rate so the most expensive one can be targeted first.",
     );
   } else if (focus === "cashflow") {
     add(
       "immediate",
+      "cashflow",
       "Track every expense for one week to see exactly where your money goes.",
     );
   } else {
     add(
       "immediate",
+      "foundation",
       `Open a dedicated ${noun} account so your progress is separate and visible.`,
     );
   }
@@ -336,26 +356,31 @@ export function computeRoadmap(
   if (monthlySurplus !== null && monthlySurplus > 0) {
     add(
       "30_day",
+      "automate",
       `Automate a recurring ${usd(monthlySurplus)}/mo transfer into your ${noun} account on payday.`,
     );
   } else if (focus === "credit") {
     add(
       "30_day",
+      "credit",
       "Bring every credit card balance well below its limit and set autopay so no due date is missed.",
     );
   } else if (focus === "debt") {
     add(
       "30_day",
+      "debt",
       "Make every minimum payment and put any extra toward the highest-interest balance.",
     );
   } else if (focus === "cashflow") {
     add(
       "30_day",
+      "cashflow",
       "Cancel or pause your least-used recurring subscriptions and redirect that money to your goal.",
     );
   } else {
     add(
       "30_day",
+      "foundation",
       `Set a specific monthly ${noun} target and automate the transfer.`,
     );
   }
@@ -364,21 +389,25 @@ export function computeRoadmap(
   if (hasExpenses) {
     add(
       "90_day",
+      "emergency",
       `Build a starter emergency fund of ${usd(p.monthlyExpenses * 3)} (about three months of expenses) so setbacks don't derail your plan.`,
     );
   } else if (focus === "credit") {
     add(
       "90_day",
+      "credit",
       "Keep utilization low and payments on time across several statement cycles to start moving your score.",
     );
   } else if (hasDebt) {
     add(
       "90_day",
+      "debt",
       "Pay your highest-interest debt down by a meaningful chunk and re-check your debt-to-income.",
     );
   } else {
     add(
       "90_day",
+      "review",
       "Review your progress with Pepper and adjust your monthly target.",
     );
   }
@@ -387,21 +416,25 @@ export function computeRoadmap(
   if (monthlySurplus !== null && monthlySurplus > 0) {
     add(
       "1_year",
+      "pace",
       `At your current ${usd(monthlySurplus)}/mo pace you'll set aside about ${usd(monthlySurplus * 12)} this year — earmark it for your ${goalLabel}.`,
     );
   } else if (focus === "credit") {
     add(
       "1_year",
+      "credit",
       "Aim to move your credit score into the next tier through a full year of on-time payments and low utilization.",
     );
   } else if (hasDebt) {
     add(
       "1_year",
+      "debt",
       "Target paying off your smallest debt entirely to free up cash flow.",
     );
   } else {
     add(
       "1_year",
+      "review",
       `Revisit your ${noun} amount and timeline with Pepper and set next year's target.`,
     );
   }
@@ -410,11 +443,13 @@ export function computeRoadmap(
   if (category === "homeownership") {
     add(
       "5_year",
+      "home",
       "Stay on pace so your down-payment fund reaches what your target home requires, then revisit financing options with Pepper.",
     );
   } else {
     add(
       "5_year",
+      "reassess",
       `Reassess your full picture each year — as income grows, raise your automated contributions so your ${goalLabel} accelerates.`,
     );
   }
@@ -451,23 +486,68 @@ export async function persistRoadmap(userId: number): Promise<RoadmapPlan> {
 
   const goalId = goals.length > 0 ? primaryGoal(goals)?.id ?? null : null;
 
+  // Status-preserving reconcile (NOT delete-and-rebuild): a step keyed the same
+  // as an existing row keeps that row's status (so a user's "done" survives
+  // regeneration); a newly-relevant step is inserted as not-started; a row
+  // whose key no longer appears — including legacy/manual rows with no key — is
+  // removed. The roadmap is engine-owned.
   const persistedSteps = await db.transaction(async (tx) => {
-    await tx.delete(roadmapSteps).where(eq(roadmapSteps.userId, userId));
-    if (plan.steps.length === 0) return [];
-    return tx
-      .insert(roadmapSteps)
-      .values(
-        plan.steps.map((s) => ({
-          userId,
-          title: s.action,
-          description: s.detail,
-          status: s.status,
-          orderIndex: s.order,
-          horizon: s.horizon,
-          goalId,
-        })),
-      )
-      .returning();
+    const existing = await tx
+      .select()
+      .from(roadmapSteps)
+      .where(eq(roadmapSteps.userId, userId));
+    const byKey = new Map(
+      existing.filter((r) => r.stableKey).map((r) => [r.stableKey!, r]),
+    );
+    const desiredKeys = new Set(plan.steps.map((s) => s.key));
+
+    const obsolete = existing.filter(
+      (r) => !r.stableKey || !desiredKeys.has(r.stableKey),
+    );
+    if (obsolete.length > 0) {
+      await tx.delete(roadmapSteps).where(
+        inArray(
+          roadmapSteps.id,
+          obsolete.map((r) => r.id),
+        ),
+      );
+    }
+
+    const rows: (typeof existing)[number][] = [];
+    for (const s of plan.steps) {
+      const prev = byKey.get(s.key);
+      if (prev) {
+        const [row] = await tx
+          .update(roadmapSteps)
+          .set({
+            title: s.action,
+            description: s.detail,
+            orderIndex: s.order,
+            horizon: s.horizon,
+            goalId,
+            // status intentionally NOT set — the user's progress is preserved.
+          })
+          .where(eq(roadmapSteps.id, prev.id))
+          .returning();
+        if (row) rows.push(row);
+      } else {
+        const [row] = await tx
+          .insert(roadmapSteps)
+          .values({
+            userId,
+            stableKey: s.key,
+            title: s.action,
+            description: s.detail,
+            status: s.status,
+            orderIndex: s.order,
+            horizon: s.horizon,
+            goalId,
+          })
+          .returning();
+        if (row) rows.push(row);
+      }
+    }
+    return rows.sort((a, b) => a.orderIndex - b.orderIndex);
   });
 
   return {
@@ -475,6 +555,7 @@ export async function persistRoadmap(userId: number): Promise<RoadmapPlan> {
     steps: persistedSteps.map((row) => ({
       id: row.id,
       horizon: (row.horizon ?? "immediate") as RoadmapHorizon,
+      key: row.stableKey ?? "",
       action: row.title,
       detail: row.description,
       status: row.status,

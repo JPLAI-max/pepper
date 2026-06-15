@@ -40,12 +40,12 @@ import type {
   OpenaiTranscribeOutput,
   OpenaiVoiceMessageInput,
   Opportunity,
+  OpportunityMatches,
   Profile,
   ProfileUpdate,
   ReadinessScore,
   RequestUploadUrlInput,
   RequestUploadUrlOutput,
-  RoadmapInput,
   RoadmapPlan,
   RoadmapStep,
   RoadmapUpdate
@@ -945,77 +945,6 @@ export function useGetRoadmap<TData = Awaited<ReturnType<typeof getRoadmap>>, TE
 
 
 
-export const getCreateRoadmapStepUrl = () => {
-
-
-
-
-  return `/api/roadmap`
-}
-
-/**
- * @summary Create a roadmap step
- */
-export const createRoadmapStep = async (roadmapInput: RoadmapInput, options?: RequestInit): Promise<RoadmapStep> => {
-
-  return customFetch<RoadmapStep>(getCreateRoadmapStepUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      roadmapInput,)
-  }
-);}
-
-
-
-
-export const getCreateRoadmapStepMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoadmapStep>>, TError,{data: BodyType<RoadmapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createRoadmapStep>>, TError,{data: BodyType<RoadmapInput>}, TContext> => {
-
-const mutationKey = ['createRoadmapStep'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRoadmapStep>>, {data: BodyType<RoadmapInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  createRoadmapStep(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateRoadmapStepMutationResult = NonNullable<Awaited<ReturnType<typeof createRoadmapStep>>>
-    export type CreateRoadmapStepMutationBody = BodyType<RoadmapInput>
-    export type CreateRoadmapStepMutationError = ErrorType<unknown>
-
-    /**
- * @summary Create a roadmap step
- */
-export const useCreateRoadmapStep = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoadmapStep>>, TError,{data: BodyType<RoadmapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createRoadmapStep>>,
-        TError,
-        {data: BodyType<RoadmapInput>},
-        TContext
-      > => {
-      return useMutation(getCreateRoadmapStepMutationOptions(options));
-    }
-
 export const getUpdateRoadmapStepUrl = (id: number,) => {
 
 
@@ -1443,6 +1372,83 @@ export function useListOpportunities<TData = Awaited<ReturnType<typeof listOppor
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListOpportunitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetOpportunityMatchesUrl = () => {
+
+
+
+
+  return `/api/opportunities/matches`
+}
+
+/**
+ * @summary Deterministic educational opportunity matches for the session user
+ */
+export const getOpportunityMatches = async ( options?: RequestInit): Promise<OpportunityMatches> => {
+
+  return customFetch<OpportunityMatches>(getGetOpportunityMatchesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOpportunityMatchesQueryKey = () => {
+    return [
+    `/api/opportunities/matches`
+    ] as const;
+    }
+
+
+export const getGetOpportunityMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getOpportunityMatches>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpportunityMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOpportunityMatchesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpportunityMatches>>> = ({ signal }) => getOpportunityMatches({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOpportunityMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOpportunityMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof getOpportunityMatches>>>
+export type GetOpportunityMatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Deterministic educational opportunity matches for the session user
+ */
+
+export function useGetOpportunityMatches<TData = Awaited<ReturnType<typeof getOpportunityMatches>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpportunityMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOpportunityMatchesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

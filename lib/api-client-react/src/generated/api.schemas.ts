@@ -179,41 +179,6 @@ export interface RoadmapStep {
   createdAt: string;
 }
 
-export type RoadmapInputStatus = typeof RoadmapInputStatus[keyof typeof RoadmapInputStatus];
-
-
-export const RoadmapInputStatus = {
-  todo: 'todo',
-  in_progress: 'in_progress',
-  done: 'done',
-} as const;
-
-/**
- * @nullable
- */
-export type RoadmapInputHorizon = typeof RoadmapInputHorizon[keyof typeof RoadmapInputHorizon] | null;
-
-
-export const RoadmapInputHorizon = {
-  immediate: 'immediate',
-  '30_day': '30_day',
-  '90_day': '90_day',
-  '1_year': '1_year',
-  '5_year': '5_year',
-} as const;
-
-export interface RoadmapInput {
-  /** @minLength 1 */
-  title: string;
-  description?: string;
-  status?: RoadmapInputStatus;
-  orderIndex?: number;
-  actionLabel?: string;
-  goalId?: number;
-  /** @nullable */
-  horizon?: RoadmapInputHorizon;
-}
-
 export type RoadmapUpdateStatus = typeof RoadmapUpdateStatus[keyof typeof RoadmapUpdateStatus];
 
 
@@ -223,30 +188,8 @@ export const RoadmapUpdateStatus = {
   done: 'done',
 } as const;
 
-/**
- * @nullable
- */
-export type RoadmapUpdateHorizon = typeof RoadmapUpdateHorizon[keyof typeof RoadmapUpdateHorizon] | null;
-
-
-export const RoadmapUpdateHorizon = {
-  immediate: 'immediate',
-  '30_day': '30_day',
-  '90_day': '90_day',
-  '1_year': '1_year',
-  '5_year': '5_year',
-} as const;
-
 export interface RoadmapUpdate {
-  /** @minLength 1 */
-  title?: string;
-  description?: string;
-  status?: RoadmapUpdateStatus;
-  orderIndex?: number;
-  actionLabel?: string;
-  goalId?: number;
-  /** @nullable */
-  horizon?: RoadmapUpdateHorizon;
+  status: RoadmapUpdateStatus;
 }
 
 /**
@@ -405,6 +348,32 @@ export interface Opportunity {
   tag?: string | null;
   recommended: boolean;
   createdAt: string;
+}
+
+export type OpportunityMatchStatus = typeof OpportunityMatchStatus[keyof typeof OpportunityMatchStatus];
+
+
+export const OpportunityMatchStatus = {
+  available: 'available',
+  foundation: 'foundation',
+  coming_later: 'coming_later',
+} as const;
+
+export interface OpportunityMatch {
+  key: string;
+  category: string;
+  title: string;
+  description: string;
+  rationale: string;
+  status: OpportunityMatchStatus;
+}
+
+export interface OpportunityMatches {
+  /** @nullable */
+  goalCategory: string | null;
+  foundationFirst: boolean;
+  matches: OpportunityMatch[];
+  comingLater: OpportunityMatch[];
 }
 
 export interface ReadinessScore {
