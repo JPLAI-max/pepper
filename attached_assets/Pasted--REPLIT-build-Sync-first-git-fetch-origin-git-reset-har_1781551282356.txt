@@ -1,0 +1,27 @@
+→ REPLIT (build)
+
+Sync first: git fetch origin && git reset --hard origin/main.
+
+Build — Readiness scoring engine. Deterministic, educational scores computed from the user's stored profile. No AI, no advice language — pure calculation from the data we already have. Scores are educational, never approve/decline.
+
+PART 1 — Schema hardening (the audit's non-blocking notes).
+- On goals.userId, roadmap_steps.userId, documents.userId: add real FK constraints (.references(() => users.id)) and DROP the default(1) now that rows are backfilled. A future insert that forgets userId must error, not silently assign user 1.
+
+PART 2 — Scoring engine (server-side, deterministic).
+- Build a scoring module that computes these 0-100 scores from the logged-in user's profile fields:
+  - Homeownership Readiness = 25% Credit + 25% Savings + 25% Debt-to-Income + 25% Income Stability.
+    Bands: 90-100 Mortgage Ready / 80-89 Likely Ready / 70-79 Minor Improvements / 60-69 Preparation / <60 Foundation Building.
+  - Credit Health — from credit score, utilization (and any payment/collections data present).
+  - Debt Health — from credit utilization, DTI, total consumer debt, interest burden.
+  - Investment Readiness — from liquidity, cash reserves, debt load, income stability.
+  - Passive Income Readiness — from available capital, monthly surplus, existing investments.
+  - Wealth Readiness (master) — blend of income stability, savings, debt management, credit, assets.
+- Handle missing fields gracefully: if a component's data isn't present yet, exclude it and note the score is partial — never invent a value to fill a gap.
+- Each score returns: value (0-100), band label, and the single biggest helping factor + single biggest hurting factor (educational "why").
+
+PART 3 — Persistence + endpoint.
+- Store computed scores in the scores table; append to score_history when a value changes.
+- Recompute automatically after the extraction pass writes new profile data.
+- Add GET /scores (requireAuth, scoped to session user) returning all scores with value, band, and the why factors.
+
+Do NOT build the Reveal UI or any dashboard score widgets in this task — only the engine, persistence, and the endpoint.
