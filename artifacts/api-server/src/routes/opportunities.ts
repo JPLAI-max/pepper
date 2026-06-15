@@ -8,7 +8,9 @@ import { getSessionUserId, requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
 
-router.get("/opportunities", async (_req, res) => {
+// GET /opportunities — the bare catalog of products. Behind requireAuth because
+// it carries gated future products we don't want publicly enumerable pre-launch.
+router.get("/opportunities", requireAuth, async (_req, res) => {
   const rows = await db
     .select()
     .from(opportunities)
