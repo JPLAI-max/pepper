@@ -103,11 +103,19 @@ async function buildContextMessages(
   const isGuest = userId == null;
   const [profile, allGoals, steps, docs, history] = await Promise.all([
     isGuest ? Promise.resolve(GUEST_PROFILE) : getOrCreateProfile(userId),
-    isGuest ? Promise.resolve([]) : db.select().from(goals),
     isGuest
       ? Promise.resolve([])
-      : db.select().from(roadmapSteps).orderBy(asc(roadmapSteps.orderIndex)),
-    isGuest ? Promise.resolve([]) : db.select().from(documents),
+      : db.select().from(goals).where(eq(goals.userId, userId)),
+    isGuest
+      ? Promise.resolve([])
+      : db
+          .select()
+          .from(roadmapSteps)
+          .where(eq(roadmapSteps.userId, userId))
+          .orderBy(asc(roadmapSteps.orderIndex)),
+    isGuest
+      ? Promise.resolve([])
+      : db.select().from(documents).where(eq(documents.userId, userId)),
     db
       .select()
       .from(messages)

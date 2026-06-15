@@ -1,4 +1,4 @@
-- [Pepper auth & ownership model](pepper-single-user.md) — multi-user cookie sessions; identity from req.session.userId only; conversation ownership via resolveConversationAccess (403). No IDOR exemption.
+- [Pepper auth & ownership model](pepper-single-user.md) — multi-user cookie sessions; identity from req.session.userId only; conversation + goals/roadmap/documents scoped by server-owned userId; opportunities stays global. No IDOR exemption.
 - [Pepper trust gate & continuity](pepper-auth-trust-gate.md) — anon chat → auth-required SSE → signup links anon conversation via session.conversationId; connect-pg-simple session table defined in Drizzle so push provisions it.
 - [Pepper voice/SSE contract](pepper-voice-sse.md) — text vs voice SSE event shapes differ; voice returns full mp3 in one event (no worklet).
 - [Pepper redesign constraints](pepper-redesign-constraints.md) — restyling must NOT touch src/pepper/ or break Documents @dnd-kit; use two-phase reference-then-match design delegation.

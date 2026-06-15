@@ -99,6 +99,9 @@ export const GOAL_CATEGORIES = [
 
 export const goals = pgTable("goals", {
   id: serial("id").primaryKey(),
+  // Owner. Mirrors profiles.userId — every row carries its owner so access is
+  // always scoped to the session user. Default 1 backfills cleanly.
+  userId: integer("user_id").notNull().default(1),
   title: text("title").notNull(),
   category: text("category").notNull().default("wealth"),
   targetAmount: integer("target_amount").notNull().default(0),
@@ -119,7 +122,7 @@ export const goalInputSchema = createInsertSchema(goals, {
   currentAmount: z.number().int().min(0).max(1_000_000_000),
   status: z.enum(["active", "achieved", "paused"]),
   priority: z.number().int().min(0).max(100),
-}).omit({ id: true, createdAt: true });
+}).omit({ id: true, createdAt: true, userId: true });
 
 export const goalUpdateSchema = goalInputSchema.partial();
 
@@ -129,6 +132,8 @@ export type GoalInput = z.infer<typeof goalInputSchema>;
 // Roadmap steps
 export const roadmapSteps = pgTable("roadmap_steps", {
   id: serial("id").primaryKey(),
+  // Owner. Mirrors profiles.userId so roadmap steps are scoped per user.
+  userId: integer("user_id").notNull().default(1),
   title: text("title").notNull(),
   description: text("description"),
   status: text("status").notNull().default("todo"),
@@ -144,7 +149,7 @@ export const roadmapInputSchema = createInsertSchema(roadmapSteps, {
   title: z.string().min(1).max(160),
   status: z.enum(["todo", "in_progress", "done"]),
   orderIndex: z.number().int().min(0).max(10_000),
-}).omit({ id: true, createdAt: true });
+}).omit({ id: true, createdAt: true, userId: true });
 
 export const roadmapUpdateSchema = roadmapInputSchema.partial();
 
@@ -163,6 +168,9 @@ export const DOCUMENT_CATEGORIES = [
 
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
+  // Owner. Mirrors profiles.userId so private financial documents are scoped
+  // per user and never served across accounts.
+  userId: integer("user_id").notNull().default(1),
   name: text("name").notNull(),
   category: text("category").notNull().default("Other"),
   status: text("status").notNull().default("needed"),
@@ -186,7 +194,7 @@ export const documentInputSchema = createInsertSchema(documents, {
   fileUrl: z.string().max(1024).nullish(),
   mimeType: z.string().max(255).nullish(),
   sizeBytes: z.number().int().min(0).max(2_000_000_000).nullish(),
-}).omit({ id: true, createdAt: true, uploadedAt: true });
+}).omit({ id: true, createdAt: true, uploadedAt: true, userId: true });
 
 export const documentUpdateSchema = documentInputSchema.partial();
 

@@ -23,14 +23,16 @@ router.get("/scores", requireAuth, async (req, res) => {
 });
 
 router.get("/dashboard/summary", requireAuth, async (req, res) => {
-  const profile = await getOrCreateProfile(getSessionUserId(req)!);
+  const userId = getSessionUserId(req)!;
+  const profile = await getOrCreateProfile(userId);
   const [allGoals, steps, docs, recommended] = await Promise.all([
-    db.select().from(goals),
+    db.select().from(goals).where(eq(goals.userId, userId)),
     db
       .select()
       .from(roadmapSteps)
+      .where(eq(roadmapSteps.userId, userId))
       .orderBy(asc(roadmapSteps.orderIndex), asc(roadmapSteps.createdAt)),
-    db.select().from(documents),
+    db.select().from(documents).where(eq(documents.userId, userId)),
     db
       .select()
       .from(opportunities)
