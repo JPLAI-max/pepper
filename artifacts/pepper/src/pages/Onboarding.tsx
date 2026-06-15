@@ -108,7 +108,7 @@ export default function Onboarding() {
         }, {
           onSuccess: (data) => {
             queryClient.setQueryData(getGetProfileQueryKey(), data);
-            setLocation("/");
+            setLocation("/dashboard");
           }
         });
       }

@@ -14,7 +14,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: profile, isLoading } = useGetProfile();
 
   const nav = [
-    { label: "Command Center", href: "/", icon: Home },
+    { label: "Command Center", href: "/dashboard", icon: Home },
     { label: "Goals", href: "/goals", icon: Target },
     { label: "Roadmap", href: "/roadmap", icon: Map },
     { label: "Readiness", href: "/readiness", icon: Shield },

@@ -11,6 +11,7 @@ import { useEffect } from "react";
 // Placeholder pages
 import NotFound from "@/pages/not-found";
 
+import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import Onboarding from "@/pages/Onboarding";
 import Goals from "@/pages/Goals";
@@ -29,7 +30,7 @@ function ProtectedRoute({ component: Component, path }: { component: any, path: 
     if (!isLoading && profile && !profile.onboarded && location !== "/onboarding") {
       setLocation("/onboarding");
     } else if (!isLoading && profile && profile.onboarded && location === "/onboarding") {
-      setLocation("/");
+      setLocation("/dashboard");
     }
   }, [profile, isLoading, location, setLocation]);
 
@@ -49,11 +50,12 @@ function ProtectedRoute({ component: Component, path }: { component: any, path: 
 function Router() {
   return (
     <Switch>
+      <Route path="/" component={Home} />
       <Route path="/onboarding">
         <ProtectedRoute component={Onboarding} path="/onboarding" />
       </Route>
-      <Route path="/">
-        <ProtectedRoute component={Dashboard} path="/" />
+      <Route path="/dashboard">
+        <ProtectedRoute component={Dashboard} path="/dashboard" />
       </Route>
       <Route path="/goals">
         <ProtectedRoute component={Goals} path="/goals" />
@@ -75,6 +77,12 @@ function Router() {
   );
 }
 
+function GlobalAssistant() {
+  const [location] = useLocation();
+  if (location === "/") return null;
+  return <PepperAssistant />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -82,7 +90,7 @@ function App() {
         <PepperProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <Router />
-            <PepperAssistant />
+            <GlobalAssistant />
           </WouterRouter>
         </PepperProvider>
         <Toaster />
