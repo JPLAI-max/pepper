@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RoadmapInputHorizon } from './roadmapInputHorizon';
 import type { RoadmapInputStatus } from './roadmapInputStatus';
 
 export interface RoadmapInput {
@@ -15,4 +16,6 @@ export interface RoadmapInput {
   orderIndex?: number;
   actionLabel?: string;
   goalId?: number;
+  /** @nullable */
+  horizon?: RoadmapInputHorizon;
 }

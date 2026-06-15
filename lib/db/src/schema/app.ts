@@ -133,6 +133,15 @@ export type Goal = typeof goals.$inferSelect;
 export type GoalInput = z.infer<typeof goalInputSchema>;
 
 // Roadmap steps
+// Time horizons the deterministic roadmap engine groups steps into.
+export const ROADMAP_HORIZONS = [
+  "immediate",
+  "30_day",
+  "90_day",
+  "1_year",
+  "5_year",
+] as const;
+
 export const roadmapSteps = pgTable("roadmap_steps", {
   id: serial("id").primaryKey(),
   // Owner (real FK). No default — userId must always be set explicitly.
@@ -145,6 +154,9 @@ export const roadmapSteps = pgTable("roadmap_steps", {
   orderIndex: integer("order_index").notNull().default(0),
   actionLabel: text("action_label"),
   goalId: integer("goal_id"),
+  // Engine-assigned time horizon (immediate / 30_day / 90_day / 1_year /
+  // 5_year). Nullable so a manually created step can omit it.
+  horizon: text("horizon"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -154,6 +166,7 @@ export const roadmapInputSchema = createInsertSchema(roadmapSteps, {
   title: z.string().min(1).max(160),
   status: z.enum(["todo", "in_progress", "done"]),
   orderIndex: z.number().int().min(0).max(10_000),
+  horizon: z.enum(ROADMAP_HORIZONS).nullish(),
 }).omit({ id: true, createdAt: true, userId: true });
 
 export const roadmapUpdateSchema = roadmapInputSchema.partial();

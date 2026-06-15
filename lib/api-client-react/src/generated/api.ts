@@ -46,6 +46,7 @@ import type {
   RequestUploadUrlInput,
   RequestUploadUrlOutput,
   RoadmapInput,
+  RoadmapPlan,
   RoadmapStep,
   RoadmapUpdate
 } from './api.schemas';
@@ -867,7 +868,7 @@ export const useDeleteGoal = <TError = ErrorType<Error>,
       return useMutation(getDeleteGoalMutationOptions(options));
     }
 
-export const getListRoadmapStepsUrl = () => {
+export const getGetRoadmapUrl = () => {
 
 
 
@@ -876,11 +877,11 @@ export const getListRoadmapStepsUrl = () => {
 }
 
 /**
- * @summary List roadmap steps
+ * @summary Get the structured deterministic roadmap
  */
-export const listRoadmapSteps = async ( options?: RequestInit): Promise<RoadmapStep[]> => {
+export const getRoadmap = async ( options?: RequestInit): Promise<RoadmapPlan> => {
 
-  return customFetch<RoadmapStep[]>(getListRoadmapStepsUrl(),
+  return customFetch<RoadmapPlan>(getGetRoadmapUrl(),
   {
     ...options,
     method: 'GET'
@@ -893,45 +894,45 @@ export const listRoadmapSteps = async ( options?: RequestInit): Promise<RoadmapS
 
 
 
-export const getListRoadmapStepsQueryKey = () => {
+export const getGetRoadmapQueryKey = () => {
     return [
     `/api/roadmap`
     ] as const;
     }
 
 
-export const getListRoadmapStepsQueryOptions = <TData = Awaited<ReturnType<typeof listRoadmapSteps>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoadmapSteps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetRoadmapQueryOptions = <TData = Awaited<ReturnType<typeof getRoadmap>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoadmap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListRoadmapStepsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetRoadmapQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRoadmapSteps>>> = ({ signal }) => listRoadmapSteps({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRoadmap>>> = ({ signal }) => getRoadmap({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRoadmapSteps>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRoadmap>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ListRoadmapStepsQueryResult = NonNullable<Awaited<ReturnType<typeof listRoadmapSteps>>>
-export type ListRoadmapStepsQueryError = ErrorType<unknown>
+export type GetRoadmapQueryResult = NonNullable<Awaited<ReturnType<typeof getRoadmap>>>
+export type GetRoadmapQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List roadmap steps
+ * @summary Get the structured deterministic roadmap
  */
 
-export function useListRoadmapSteps<TData = Awaited<ReturnType<typeof listRoadmapSteps>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoadmapSteps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetRoadmap<TData = Awaited<ReturnType<typeof getRoadmap>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoadmap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListRoadmapStepsQueryOptions(options)
+  const queryOptions = getGetRoadmapQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

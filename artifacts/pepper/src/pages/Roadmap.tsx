@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { 
-  useListRoadmapSteps, useCreateRoadmapStep, useUpdateRoadmapStep,
-  getListRoadmapStepsQueryKey, getGetDashboardSummaryQueryKey
+  useGetRoadmap, useCreateRoadmapStep, useUpdateRoadmapStep,
+  getGetRoadmapQueryKey, getGetDashboardSummaryQueryKey
 } from "@workspace/api-client-react";
-import { CheckCircle2, Circle, Clock, Plus, Loader2, ArrowRight, Map } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Plus, Loader2, Map } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { Link } from "wouter";
 
 export default function Roadmap() {
-  const { data: steps, isLoading } = useListRoadmapSteps();
+  const { data: plan, isLoading } = useGetRoadmap();
+  const steps = plan?.steps;
   const createStep = useCreateRoadmapStep();
   const updateStep = useUpdateRoadmapStep();
   const queryClient = useQueryClient();
@@ -25,11 +25,12 @@ export default function Roadmap() {
   const [editingStep, setEditingStep] = useState<any>(null);
 
   const invalidateQueries = () => {
-    queryClient.invalidateQueries({ queryKey: getListRoadmapStepsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
   };
 
   const toggleStatus = (step: any) => {
+    if (step.id == null) return;
     const newStatus = step.status === 'done' ? 'todo' : 'done';
     updateStep.mutate({ id: step.id, data: { status: newStatus as any } }, { onSuccess: invalidateQueries });
   };
@@ -78,7 +79,7 @@ export default function Roadmap() {
     );
   }
 
-  const sortedSteps = [...(steps || [])].sort((a, b) => a.orderIndex - b.orderIndex);
+  const sortedSteps = [...(steps || [])].sort((a, b) => a.order - b.order);
 
   return (
     <div className="max-w-4xl mx-auto space-y-12 relative">
@@ -101,7 +102,7 @@ export default function Roadmap() {
           
           return (
             <motion.div 
-              key={step.id} 
+              key={step.id ?? index} 
               initial={{ opacity: 0, x: -20 }} 
               animate={{ opacity: 1, x: 0 }} 
               transition={{ delay: index * 0.1, duration: 0.4 }}
@@ -130,24 +131,19 @@ export default function Roadmap() {
                   <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
                     <div className="flex-1 space-y-2">
                       <h3 className={`text-2xl font-serif tracking-tight ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                        {step.title}
+                        {step.action}
                       </h3>
-                      {step.description && (
-                        <p className={`leading-relaxed text-sm md:text-base ${isDone ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>{step.description}</p>
+                      {step.detail && (
+                        <p className={`leading-relaxed text-sm md:text-base ${isDone ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>{step.detail}</p>
                       )}
                     </div>
                     
                     <div className="flex flex-wrap gap-3 items-center shrink-0 w-full md:w-auto mt-2 md:mt-0">
-                      {step.actionLabel && !isDone && (
-                        <Button variant="outline" className="rounded-full border-white/10 bg-secondary/50 hover:bg-secondary text-foreground backdrop-blur-sm transition-all h-10 px-5 w-full md:w-auto" asChild>
-                          <Link href="#">{step.actionLabel} <ArrowRight className="w-4 h-4 ml-2" /></Link>
-                        </Button>
-                      )}
                       <Button 
                         variant={isDone ? "ghost" : "default"} 
                         className={`rounded-full h-10 px-6 transition-all w-full md:w-auto ${!isDone && isNext ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_15px_rgba(232,93,63,0.4)]" : !isDone ? "bg-secondary text-foreground hover:bg-secondary/80" : ""}`}
                         onClick={() => toggleStatus(step)}
-                        disabled={updateStep.isPending}
+                        disabled={updateStep.isPending || step.id == null}
                       >
                         {isDone ? "Undo" : "Mark Complete"}
                       </Button>

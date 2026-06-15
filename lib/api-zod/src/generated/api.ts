@@ -195,19 +195,44 @@ export const DeleteGoalParams = zod.object({
 
 
 /**
- * @summary List roadmap steps
+ * @summary Get the structured deterministic roadmap
  */
-export const ListRoadmapStepsResponseItem = zod.object({
-  "id": zod.number(),
-  "title": zod.string(),
-  "description": zod.string().nullish(),
+export const GetRoadmapResponse = zod.object({
+  "position": zod.object({
+  "goalTitle": zod.string().nullable(),
+  "goalCategory": zod.string().nullable(),
+  "focusScore": zod.object({
+  "key": zod.string(),
+  "value": zod.number(),
+  "band": zod.string()
+}).nullable(),
+  "netWorth": zod.number(),
+  "monthlySurplus": zod.number().nullable(),
+  "partial": zod.boolean()
+}),
+  "primaryObstacle": zod.union([zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "focus": zod.string(),
+  "detail": zod.string(),
+  "value": zod.number().nullable()
+}),zod.null()]),
+  "opportunities": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "detail": zod.string(),
+  "monthlyImpact": zod.number().nullable(),
+  "annualImpact": zod.number().nullable()
+})),
+  "steps": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "horizon": zod.enum(['immediate', '30_day', '90_day', '1_year', '5_year']),
+  "action": zod.string(),
+  "detail": zod.string().nullable(),
   "status": zod.string(),
-  "orderIndex": zod.number(),
-  "actionLabel": zod.string().nullish(),
-  "goalId": zod.number().nullish(),
-  "createdAt": zod.coerce.date()
+  "order": zod.number()
+}))
 })
-export const ListRoadmapStepsResponse = zod.array(ListRoadmapStepsResponseItem)
 
 
 /**
@@ -222,7 +247,8 @@ export const CreateRoadmapStepBody = zod.object({
   "status": zod.enum(['todo', 'in_progress', 'done']).optional(),
   "orderIndex": zod.number().optional(),
   "actionLabel": zod.string().optional(),
-  "goalId": zod.number().optional()
+  "goalId": zod.number().optional(),
+  "horizon": zod.union([zod.literal('immediate'),zod.literal('30_day'),zod.literal('90_day'),zod.literal('1_year'),zod.literal('5_year'),zod.literal(null)]).nullish()
 })
 
 
@@ -242,7 +268,8 @@ export const UpdateRoadmapStepBody = zod.object({
   "status": zod.enum(['todo', 'in_progress', 'done']).optional(),
   "orderIndex": zod.number().optional(),
   "actionLabel": zod.string().optional(),
-  "goalId": zod.number().optional()
+  "goalId": zod.number().optional(),
+  "horizon": zod.union([zod.literal('immediate'),zod.literal('30_day'),zod.literal('90_day'),zod.literal('1_year'),zod.literal('5_year'),zod.literal(null)]).nullish()
 })
 
 export const UpdateRoadmapStepResponse = zod.object({
@@ -253,6 +280,7 @@ export const UpdateRoadmapStepResponse = zod.object({
   "orderIndex": zod.number(),
   "actionLabel": zod.string().nullish(),
   "goalId": zod.number().nullish(),
+  "horizon": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -394,6 +422,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "orderIndex": zod.number(),
   "actionLabel": zod.string().nullish(),
   "goalId": zod.number().nullish(),
+  "horizon": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional(),
   "recommendedOpportunities": zod.array(zod.object({

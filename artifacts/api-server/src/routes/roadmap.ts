@@ -1,19 +1,54 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq } from "drizzle-orm";
-import { db, roadmapSteps } from "@workspace/db";
+import { db, goals as goalsTable, roadmapSteps } from "@workspace/db";
 import { CreateRoadmapStepBody, UpdateRoadmapStepBody } from "@workspace/api-zod";
+import { getOrCreateProfile } from "../lib/identity";
+import { computeReadiness } from "../lib/scoring";
+import {
+  computeRoadmap,
+  type RoadmapHorizon,
+  type RoadmapPlanStep,
+} from "../lib/roadmap";
 import { getSessionUserId, requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
 
+// GET /roadmap — the structured, deterministic roadmap for the session user:
+// current position, primary obstacle, opportunities, and the horizon steps.
+// READ-ONLY: position/obstacle/opportunities are computed in memory; the steps
+// are read from persisted roadmap_steps when present (so they carry ids and any
+// status the user toggled), and computed in memory WITHOUT writing when the
+// roadmap has not been generated yet. Regeneration happens only on the
+// recompute-after-extraction path (see lib/roadmap persistRoadmap).
 router.get("/roadmap", requireAuth, async (req, res) => {
   const userId = getSessionUserId(req)!;
-  const rows = await db
+  const profile = await getOrCreateProfile(userId);
+  const goals = await db
+    .select()
+    .from(goalsTable)
+    .where(eq(goalsTable.userId, userId));
+  const scores = computeReadiness(profile);
+  const plan = computeRoadmap(profile, goals, scores);
+
+  const persisted = await db
     .select()
     .from(roadmapSteps)
     .where(eq(roadmapSteps.userId, userId))
     .orderBy(asc(roadmapSteps.orderIndex), asc(roadmapSteps.createdAt));
-  res.json(rows);
+
+  const steps: RoadmapPlanStep[] =
+    persisted.length > 0
+      ? persisted.map((row) => ({
+          id: row.id,
+          horizon: (row.horizon ?? "immediate") as RoadmapHorizon,
+          action: row.title,
+          detail: row.description,
+          status: row.status,
+          order: row.orderIndex,
+        }))
+      : plan.steps;
+
+  res.json({ ...plan, steps });
 });
 
 router.post("/roadmap", requireAuth, async (req, res) => {

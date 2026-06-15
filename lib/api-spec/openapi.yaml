@@ -236,18 +236,16 @@ paths:
 
   /roadmap:
     get:
-      operationId: listRoadmapSteps
+      operationId: getRoadmap
       tags: [roadmap]
-      summary: List roadmap steps
+      summary: Get the structured deterministic roadmap
       responses:
         "200":
-          description: Roadmap steps
+          description: Structured roadmap
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/RoadmapStep"
+                $ref: "#/components/schemas/RoadmapPlan"
     post:
       operationId: createRoadmapStep
       tags: [roadmap]
@@ -787,6 +785,8 @@ components:
           type: ["string", "null"]
         goalId:
           type: ["integer", "null"]
+        horizon:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -813,6 +813,9 @@ components:
           type: string
         goalId:
           type: integer
+        horizon:
+          type: ["string", "null"]
+          enum: ["immediate", "30_day", "90_day", "1_year", "5_year", null]
       required:
         - title
     RoadmapUpdate:
@@ -832,6 +835,125 @@ components:
           type: string
         goalId:
           type: integer
+        horizon:
+          type: ["string", "null"]
+          enum: ["immediate", "30_day", "90_day", "1_year", "5_year", null]
+
+    RoadmapPosition:
+      type: object
+      properties:
+        goalTitle:
+          type: ["string", "null"]
+        goalCategory:
+          type: ["string", "null"]
+        focusScore:
+          type: ["object", "null"]
+          properties:
+            key:
+              type: string
+            value:
+              type: integer
+            band:
+              type: string
+          required:
+            - key
+            - value
+            - band
+        netWorth:
+          type: integer
+        monthlySurplus:
+          type: ["integer", "null"]
+        partial:
+          type: boolean
+      required:
+        - goalTitle
+        - goalCategory
+        - focusScore
+        - netWorth
+        - monthlySurplus
+        - partial
+    RoadmapObstacle:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        focus:
+          type: string
+        detail:
+          type: string
+        value:
+          type: ["integer", "null"]
+      required:
+        - key
+        - label
+        - focus
+        - detail
+        - value
+    RoadmapOpportunity:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        detail:
+          type: string
+        monthlyImpact:
+          type: ["integer", "null"]
+        annualImpact:
+          type: ["integer", "null"]
+      required:
+        - key
+        - label
+        - detail
+        - monthlyImpact
+        - annualImpact
+    RoadmapPlanStep:
+      type: object
+      properties:
+        id:
+          type: integer
+        horizon:
+          type: string
+          enum: ["immediate", "30_day", "90_day", "1_year", "5_year"]
+        action:
+          type: string
+        detail:
+          type: ["string", "null"]
+        status:
+          type: string
+        order:
+          type: integer
+      required:
+        - horizon
+        - action
+        - detail
+        - status
+        - order
+    RoadmapPlan:
+      type: object
+      properties:
+        position:
+          $ref: "#/components/schemas/RoadmapPosition"
+        primaryObstacle:
+          oneOf:
+            - $ref: "#/components/schemas/RoadmapObstacle"
+            - type: "null"
+        opportunities:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoadmapOpportunity"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoadmapPlanStep"
+      required:
+        - position
+        - primaryObstacle
+        - opportunities
+        - steps
 
     Document:
       type: object

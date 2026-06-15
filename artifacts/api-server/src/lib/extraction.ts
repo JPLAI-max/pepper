@@ -10,6 +10,7 @@ import {
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "./logger";
 import { persistReadinessScores } from "./scoring";
+import { persistRoadmap } from "./roadmap";
 
 // Cheap/small model — this runs on every user turn, so keep cost down.
 const EXTRACT_MODEL = process.env.EXTRACT_MODEL ?? "gpt-4o-mini";
@@ -276,11 +277,18 @@ export async function extractAndPersist(
     "Extraction persisted profile changes",
   );
 
-  // Profile data changed → recompute readiness scores. Owns its errors so a
-  // scoring failure never breaks the (fire-and-forget) extraction pass.
+  // Profile data changed → recompute readiness scores, then regenerate the
+  // roadmap from the fresh scores. Each owns its errors so a failure here never
+  // breaks the (fire-and-forget) extraction pass.
   try {
     await persistReadinessScores(userId);
   } catch (err) {
     logger.warn({ userId, err }, "Score recompute after extraction failed");
+  }
+
+  try {
+    await persistRoadmap(userId);
+  } catch (err) {
+    logger.warn({ userId, err }, "Roadmap regenerate after extraction failed");
   }
 }

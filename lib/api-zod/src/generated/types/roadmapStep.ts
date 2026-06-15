@@ -17,5 +17,7 @@ export interface RoadmapStep {
   actionLabel?: string | null;
   /** @nullable */
   goalId?: number | null;
+  /** @nullable */
+  horizon?: string | null;
   createdAt: Date;
 }
