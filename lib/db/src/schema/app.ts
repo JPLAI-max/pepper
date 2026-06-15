@@ -15,6 +15,10 @@ import { z } from "zod/v4";
 // + add a login screen, no table re-plumbing.
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  // Real accounts: email + bcrypt password hash. Identity is now resolved from
+  // the verified server-side session, not a singleton.
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

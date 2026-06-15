@@ -1,0 +1,91 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetMe,
+  useLogin,
+  useLogout,
+  useSignup,
+  getGetMeQueryKey,
+  type AuthUser,
+} from "@workspace/api-client-react";
+
+interface AuthContextValue {
+  user: AuthUser | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  signup: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useGetMe();
+  const signupMutation = useSignup();
+  const loginMutation = useLogin();
+  const logoutMutation = useLogout();
+
+  const user = data?.user ?? null;
+
+  const invalidateAll = useCallback(async () => {
+    // Identity changed: drop every cached query so per-user data is refetched.
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
+
+  const signup = useCallback(
+    async (email: string, password: string) => {
+      await signupMutation.mutateAsync({ data: { email, password } });
+      await invalidateAll();
+    },
+    [signupMutation, invalidateAll],
+  );
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      await loginMutation.mutateAsync({ data: { email, password } });
+      await invalidateAll();
+    },
+    [loginMutation, invalidateAll],
+  );
+
+  const logout = useCallback(async () => {
+    await logoutMutation.mutateAsync();
+    await invalidateAll();
+  }, [logoutMutation, invalidateAll]);
+
+  const refresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+  }, [queryClient]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isLoading,
+      isAuthenticated: user != null,
+      signup,
+      login,
+      logout,
+      refresh,
+    }),
+    [user, isLoading, signup, login, logout, refresh],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return ctx;
+}

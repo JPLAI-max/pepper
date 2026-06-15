@@ -3,9 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PepperProvider } from "@/pepper";
+import { AuthProvider, useAuth, AuthModalProvider } from "@/auth";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PepperAssistant } from "@/components/pepper/PepperAssistant";
-import { useGetProfile } from "@workspace/api-client-react";
+import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import { useEffect } from "react";
 
 // Placeholder pages
@@ -22,19 +23,33 @@ import Opportunities from "@/pages/Opportunities";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ component: Component, path }: { component: any, path: string }) {
-  const { data: profile, isLoading } = useGetProfile();
+function ProtectedRoute({ component: Component }: { component: any, path: string }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useGetProfile({
+    query: { enabled: isAuthenticated, queryKey: getGetProfileQueryKey() },
+  });
   const [location, setLocation] = useLocation();
 
+  // Auth gate: anonymous users cannot reach protected routes. Send them to the
+  // public landing where they can chat and be invited to set up an account.
   useEffect(() => {
-    if (!isLoading && profile && !profile.onboarded && location !== "/onboarding") {
+    if (!authLoading && !isAuthenticated) {
+      setLocation("/");
+    }
+  }, [authLoading, isAuthenticated, setLocation]);
+
+  useEffect(() => {
+    if (!isAuthenticated || profileLoading || !profile) return;
+    if (!profile.onboarded && location !== "/onboarding") {
       setLocation("/onboarding");
-    } else if (!isLoading && profile && profile.onboarded && location === "/onboarding") {
+    } else if (profile.onboarded && location === "/onboarding") {
       setLocation("/dashboard");
     }
-  }, [profile, isLoading, location, setLocation]);
+  }, [profile, profileLoading, isAuthenticated, location, setLocation]);
 
-  if (isLoading) return null;
+  if (authLoading) return null;
+  if (!isAuthenticated) return null;
+  if (profileLoading) return null;
 
   if (location === "/onboarding") {
     return <Component />;
@@ -78,8 +93,8 @@ function Router() {
 }
 
 function GlobalAssistant() {
-  const [location] = useLocation();
-  if (location === "/") return null;
+  // The Pepper panel is available everywhere, including the public landing,
+  // so anonymous visitors can start a conversation before signing up.
   return <PepperAssistant />;
 }
 
@@ -87,12 +102,16 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <PepperProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-            <GlobalAssistant />
-          </WouterRouter>
-        </PepperProvider>
+        <AuthProvider>
+          <PepperProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AuthModalProvider>
+                <Router />
+                <GlobalAssistant />
+              </AuthModalProvider>
+            </WouterRouter>
+          </PepperProvider>
+        </AuthProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

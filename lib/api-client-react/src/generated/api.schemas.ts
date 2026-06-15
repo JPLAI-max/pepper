@@ -13,6 +13,25 @@ export interface Error {
   error: string;
 }
 
+export interface AuthCredentials {
+  email: string;
+  /** @minLength 8 */
+  password: string;
+}
+
+export interface AuthUser {
+  id: number;
+  email: string;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+}
+
+export interface AuthState {
+  user: AuthUser | null;
+}
+
 export interface RequestUploadUrlInput {
   name: string;
   size: number;

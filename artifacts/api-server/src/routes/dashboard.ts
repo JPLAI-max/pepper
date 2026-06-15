@@ -13,16 +13,17 @@ import {
   monthlyCashflow,
 } from "../lib/insights";
 import { getOrCreateProfile } from "../lib/identity";
+import { getSessionUserId, requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
 
-router.get("/scores", async (_req, res) => {
-  const profile = await getOrCreateProfile();
+router.get("/scores", requireAuth, async (req, res) => {
+  const profile = await getOrCreateProfile(getSessionUserId(req)!);
   res.json(computeScores(profile));
 });
 
-router.get("/dashboard/summary", async (_req, res) => {
-  const profile = await getOrCreateProfile();
+router.get("/dashboard/summary", requireAuth, async (req, res) => {
+  const profile = await getOrCreateProfile(getSessionUserId(req)!);
   const [allGoals, steps, docs, recommended] = await Promise.all([
     db.select().from(goals),
     db

@@ -48,4 +48,13 @@ export interface PepperContextValue {
 
   /** Clear the current conversation and start fresh. */
   reset: () => Promise<void>;
+
+  /**
+   * True when the server has signalled (via the chat/voice trust gate) that
+   * the anonymous user shared financial specifics and should set up an account
+   * to persist them. The in-progress conversation is preserved.
+   */
+  authRequired: boolean;
+  /** Dismiss the auth-required signal (e.g. after sign-up or "keep chatting"). */
+  clearAuthRequired: () => void;
 }

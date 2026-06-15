@@ -47,6 +47,7 @@ async function streamSSE(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    credentials: "include",
   });
   if (!res.ok) {
     throw new Error(`Request failed with status ${res.status}`);
@@ -110,6 +111,9 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   });
   const [wakeWordEnabled, setWakeWordEnabledState] = useState(false);
   const [dictating, setDictating] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
+
+  const clearAuthRequired = useCallback(() => setAuthRequired(false), []);
 
   const conversationIdRef = useRef<number | null>(null);
   const conversationPromiseRef = useRef<Promise<number> | null>(null);
@@ -152,6 +156,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: "Pepper Chat" }),
+        credentials: "include",
       });
       const data = (await res.json()) as { id: number };
       conversationIdRef.current = data.id;
@@ -185,6 +190,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(
           `${API_BASE}/openai/conversations/${id}/messages`,
+          { credentials: "include" },
         );
         if (!res.ok) return;
         const rows = (await res.json()) as {
@@ -250,6 +256,9 @@ export function PepperProvider({ children }: { children: ReactNode }) {
           `${API_BASE}/openai/conversations/${id}/messages`,
           { content: trimmed },
           (event) => {
+            if (event.authRequired === true) {
+              setAuthRequired(true);
+            }
             if (typeof event.content === "string") {
               setMessages((prev) =>
                 prev.map((m) =>
@@ -301,7 +310,9 @@ export function PepperProvider({ children }: { children: ReactNode }) {
           { audio: base64, voice },
           (event) => {
             const type = event.type as string | undefined;
-            if (type === "user_transcript" && typeof event.data === "string") {
+            if (type === "auth_required") {
+              setAuthRequired(true);
+            } else if (type === "user_transcript" && typeof event.data === "string") {
               setMessages((prev) => [
                 ...prev,
                 { id: uid(), role: "user", content: event.data as string },
@@ -408,6 +419,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ audio: base64 }),
+        credentials: "include",
       });
       if (!res.ok) return "";
       const data = (await res.json()) as { text: string };
@@ -483,6 +495,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     }
     setMessages([]);
     setStatus("idle");
+    setAuthRequired(false);
   }, [stopSpeaking]);
 
   const value: PepperContextValue = {
@@ -505,6 +518,8 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     dictateStop,
     dictating,
     reset,
+    authRequired,
+    clearAuthRequired,
   };
 
   return (

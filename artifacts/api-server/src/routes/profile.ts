@@ -3,21 +3,24 @@ import { eq } from "drizzle-orm";
 import { db, profiles } from "@workspace/db";
 import { UpdateProfileBody } from "@workspace/api-zod";
 import { getOrCreateProfile } from "../lib/identity";
+import { getSessionUserId, requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
 
-router.get("/profile", async (_req, res) => {
-  const profile = await getOrCreateProfile();
+router.get("/profile", requireAuth, async (req, res) => {
+  const userId = getSessionUserId(req)!;
+  const profile = await getOrCreateProfile(userId);
   res.json(profile);
 });
 
-router.patch("/profile", async (req, res) => {
+router.patch("/profile", requireAuth, async (req, res) => {
   const parsed = UpdateProfileBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid profile data" });
     return;
   }
-  const profile = await getOrCreateProfile();
+  const userId = getSessionUserId(req)!;
+  const profile = await getOrCreateProfile(userId);
   const updated = await db
     .update(profiles)
     .set({ ...parsed.data, updatedAt: new Date() })

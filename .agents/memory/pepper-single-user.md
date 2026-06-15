@@ -1,12 +1,18 @@
 ---
-name: Pepper single-user design
-description: Why Pepper's API has no auth and no conversation ownership checks
+name: Pepper auth & ownership model
+description: How identity, scoping, and ownership checks work in Pepper (superseded the old single-user no-auth design).
 ---
 
-Pepper is a deliberately single-user app.
+# Pepper auth & ownership model
 
-The rule: the profile row is a singleton accessed via getOrCreate, there are no user accounts or auth, and the OpenAI conversation/message routes (`/openai/conversations/:id/...`) accept raw IDs with NO ownership/authz checks.
+Pepper now has **multi-user cookie-session auth** (email+password, bcrypt only, no Clerk/Replit Auth, no passkeys). The old "single-user singleton profile, no ownership checks" design is **gone** — do NOT reintroduce the IDOR exemption.
 
-**Why:** The product is one person's personal wealth coach. Adding auth/ownership now would be scope the user never asked for. A code review (architect) flagged the missing ownership check as an IDOR — it is only a real issue if/when multi-user is introduced.
+**Rules:**
+- Identity comes ONLY from the server session (`req.session.userId`). Never trust a client-supplied id.
+- `getOrCreateProfile(userId)` REQUIRES a userId. Profile + profile_history + conversations are scoped per user.
+- Conversation read/write go through `resolveConversationAccess()`: owned conversation requires matching `session.userId`; anonymous conversation requires matching `session.conversationId`; otherwise 403.
+- Session fixation guard: `req.session.regenerate()` is called before setting `userId` on both signup and login.
 
-**How to apply:** Do not add auth or per-user filtering as a "bug fix." Only introduce ownership checks if the user explicitly adds multiple users/accounts.
+**Known follow-up (intentional, not a bug):** goals / roadmap / documents / opportunities are NOT user-scoped yet — they're a single shared set. Only profile + history + conversations were in scope per the spec.
+
+**Why:** The product spec changed from a demo single-user app to a real multi-user foundation with a trust gate. Ownership checks are now mandatory on every conversation access.

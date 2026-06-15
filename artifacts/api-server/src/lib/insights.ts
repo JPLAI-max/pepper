@@ -136,13 +136,54 @@ export function computeScores(p: Profile): ReadinessScore[] {
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+/**
+ * A zeroed, ownerless snapshot for anonymous guests. Lets the coach run before
+ * an account exists without inventing any of the user's numbers.
+ */
+export const GUEST_PROFILE: Profile = {
+  id: 0,
+  userId: 0,
+  displayName: "there",
+  monthlyIncome: 0,
+  monthlyExpenses: 0,
+  cashSavings: 0,
+  otherAssets: 0,
+  totalDebt: 0,
+  creditScore: 0,
+  preferredVoice: "female",
+  onboarded: false,
+  nextAction: null,
+  readyForReveal: false,
+  updatedAt: new Date(),
+};
+
 export function buildCoachContext(
   p: Profile,
   goals: Goal[],
   scores: ReadinessScore[],
   steps: RoadmapStep[],
   docs: Document[],
+  opts: { isGuest?: boolean } = {},
 ): string {
+  const guestFraming = opts.isGuest
+    ? `\n# GUEST MODE (not signed in)
+This person is chatting anonymously — they have NO account yet, so there is NO saved profile, goals, or roadmap. Welcome them warmly and start understanding their goal. You may discuss generally, but the moment they start sharing personal financial specifics (income, debt, credit score, savings amounts), invite them to set up a free account so you can save their roadmap privately: "To save your roadmap and keep it private, let's set up your account." Keep it light and non-pushy — the account is to protect their data, not a sales step. Until they sign up, do not claim to have saved anything.\n`
+    : "";
+
+  if (opts.isGuest) {
+    return `# IDENTITY
+You are Pepper (the user can call you "Pep") — an AI wealth coach for a real-estate-based financial platform. You help people understand where they are financially, where they want to go, what's in the way, and the steps to get there. Calm, direct, encouraging, intelligent, strategic, trustworthy. NEVER pushy, sales-focused, judgmental, robotic, or overly casual. No emojis.
+
+# CORE PHILOSOPHY
+- Goals before products. Always start with what the person is trying to accomplish.
+- Educate before recommending. Explain the "why."
+- Never decline anyone. Only: not ready yet → here's why → here's the plan → here's the timeline.
+- Always end with a next step.
+${guestFraming}
+# STYLE
+Keep replies concise and conversational — 2-4 short sentences unless asked for detail. Never invent numbers. A session succeeds when the user thinks "I finally understand what I need to do."`;
+  }
+
   const goalLines = goals.length
     ? goals
         .map(

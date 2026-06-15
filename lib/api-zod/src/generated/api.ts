@@ -9,6 +9,50 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Create an account and start a session
+ */
+export const signupBodyPasswordMin = 8;
+
+
+
+export const SignupBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(signupBodyPasswordMin)
+})
+
+
+/**
+ * @summary Log in and start a session
+ */
+export const loginBodyPasswordMin = 8;
+
+
+
+export const LoginBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(loginBodyPasswordMin)
+})
+
+export const LoginResponse = zod.object({
+  "user": zod.object({
+  "id": zod.number(),
+  "email": zod.string()
+})
+})
+
+
+/**
+ * @summary Get the current session's user (null when anonymous)
+ */
+export const GetMeResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.number(),
+  "email": zod.string()
+}),zod.null()])
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

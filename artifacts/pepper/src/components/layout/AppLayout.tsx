@@ -6,12 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useGetProfile } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/auth";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { open, setOpen, status } = usePepper();
-  
+  const { open, setOpen, status, reset } = usePepper();
+  const { user, logout } = useAuth();
+
   const { data: profile, isLoading } = useGetProfile();
+
+  const handleLogout = async () => {
+    await logout();
+    await reset();
+  };
 
   const nav = [
     { label: "Command Center", href: "/dashboard", icon: Home },
@@ -53,16 +60,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-border/40 bg-card/30">
+        <div className="p-4 border-t border-border/40 bg-card/30 space-y-2">
           <div className="flex items-center gap-3 px-2 py-2">
             <div className="w-9 h-9 rounded-full bg-secondary text-foreground flex items-center justify-center font-medium shadow-inner border border-white/10">
-              {profile?.displayName?.[0]?.toUpperCase() || "U"}
+              {profile?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">{profile?.displayName || "User"}</span>
-              <span className="text-xs text-muted-foreground">Wealth Builder</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-medium text-foreground truncate">{profile?.displayName || "User"}</span>
+              <span className="text-xs text-muted-foreground truncate">{user?.email || "Wealth Builder"}</span>
             </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Log out</span>
+          </button>
         </div>
       </aside>
 

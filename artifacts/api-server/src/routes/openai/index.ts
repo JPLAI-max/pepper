@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { asc, eq } from "drizzle-orm";
 import {
   db,
@@ -20,8 +20,13 @@ import {
   textToSpeech,
   ensureCompatibleFormat,
 } from "@workspace/integrations-openai-ai-server/audio";
-import { buildCoachContext, computeScores } from "../../lib/insights";
-import { getCurrentUserId, getOrCreateProfile } from "../../lib/identity";
+import {
+  buildCoachContext,
+  computeScores,
+  GUEST_PROFILE,
+} from "../../lib/insights";
+import { getOrCreateProfile } from "../../lib/identity";
+import { getSessionUserId } from "../../lib/auth";
 import { extractAndPersist } from "../../lib/extraction";
 import { logger } from "../../lib/logger";
 
@@ -33,14 +38,57 @@ const VOICE_MAP: Record<string, "shimmer" | "onyx"> = {
 };
 
 /**
- * Fire-and-forget the silent extraction pass for a finished user turn. Never
- * touches the response stream and never throws into the request — its output is
- * persisted to the profile, never sent to the chat UI.
+ * Detect when an anonymous user is about to hand over personal financial
+ * specifics (a dollar amount, a credit score, or income/debt/savings talk with
+ * a number). Used only to decide whether to surface the account-setup prompt —
+ * never to block the conversation.
  */
-function scheduleExtraction(conversationId: number): void {
+function mentionsFinancialSpecifics(text: string): boolean {
+  const t = text.toLowerCase();
+  const hasMoney = /\$\s?\d|\b\d{2,}\s?k\b|\b\d{3,}\b/.test(t);
+  const creditScore = /credit\s*score|fico/.test(t);
+  const topicWithNumber =
+    /(income|salary|make|earn|debt|owe|loan|savings?|save|mortgage|rent|paycheck|401k|invest)/.test(
+      t,
+    ) && /\d/.test(t);
+  return hasMoney || creditScore || topicWithNumber;
+}
+
+/**
+ * Resolve who (if anyone) may act on a conversation. An owned conversation is
+ * accessible only to its owner's session; an anonymous conversation is
+ * accessible only to the browser session that created it (bound via
+ * session.conversationId). Returns null when access is denied.
+ */
+async function resolveConversationAccess(
+  req: Request,
+  conversationId: number,
+): Promise<{ userId: number | null } | null> {
+  const conv = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
+  if (!conv[0]) return null;
+
+  const sessionUserId = getSessionUserId(req);
+  if (conv[0].userId != null) {
+    // Owned conversation: only the owner's session may touch it.
+    return sessionUserId === conv[0].userId ? { userId: conv[0].userId } : null;
+  }
+  // Anonymous conversation: only the session that created it may touch it.
+  return req.session.conversationId === conversationId ? { userId: null } : null;
+}
+
+/**
+ * Fire-and-forget the silent extraction pass for a finished user turn. Only
+ * persists for authenticated users — anonymous data is never written. Never
+ * touches the response stream and never throws into the request.
+ */
+function scheduleExtraction(conversationId: number, userId: number | null): void {
+  if (userId == null) return;
   void (async () => {
     try {
-      const userId = await getCurrentUserId();
       await extractAndPersist(conversationId, userId);
     } catch (err) {
       logger.error({ err, conversationId }, "Silent extraction failed");
@@ -48,15 +96,18 @@ function scheduleExtraction(conversationId: number): void {
   })();
 }
 
-async function buildContextMessages(conversationId: number) {
+async function buildContextMessages(
+  conversationId: number,
+  userId: number | null,
+) {
+  const isGuest = userId == null;
   const [profile, allGoals, steps, docs, history] = await Promise.all([
-    getOrCreateProfile(),
-    db.select().from(goals),
-    db
-      .select()
-      .from(roadmapSteps)
-      .orderBy(asc(roadmapSteps.orderIndex)),
-    db.select().from(documents),
+    isGuest ? Promise.resolve(GUEST_PROFILE) : getOrCreateProfile(userId),
+    isGuest ? Promise.resolve([]) : db.select().from(goals),
+    isGuest
+      ? Promise.resolve([])
+      : db.select().from(roadmapSteps).orderBy(asc(roadmapSteps.orderIndex)),
+    isGuest ? Promise.resolve([]) : db.select().from(documents),
     db
       .select()
       .from(messages)
@@ -65,7 +116,9 @@ async function buildContextMessages(conversationId: number) {
   ]);
 
   const scores = computeScores(profile);
-  const system = buildCoachContext(profile, allGoals, scores, steps, docs);
+  const system = buildCoachContext(profile, allGoals, scores, steps, docs, {
+    isGuest,
+  });
 
   const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] =
     [{ role: "system", content: system }];
@@ -83,10 +136,17 @@ router.post("/openai/conversations", async (req, res) => {
     res.status(400).json({ error: "Invalid conversation data" });
     return;
   }
+  const userId = getSessionUserId(req);
   const created = await db
     .insert(conversations)
-    .values({ title: parsed.data.title })
+    .values({ title: parsed.data.title, userId: userId ?? null })
     .returning();
+  // Anonymous conversation: bind it to this browser session so the guest's
+  // chat is private to them and can be claimed at signup. Writing to the
+  // session issues the cookie.
+  if (userId == null) {
+    req.session.conversationId = created[0]!.id;
+  }
   res.status(201).json(created[0]);
 });
 
@@ -94,6 +154,11 @@ router.get("/openai/conversations/:id/messages", async (req, res) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const access = await resolveConversationAccess(req, id);
+  if (!access) {
+    res.status(403).json({ error: "Not your conversation" });
     return;
   }
   const rows = await db
@@ -115,8 +180,13 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
     res.status(400).json({ error: "Invalid message" });
     return;
   }
+  const access = await resolveConversationAccess(req, id);
+  if (!access) {
+    res.status(403).json({ error: "Not your conversation" });
+    return;
+  }
 
-  const chatMessages = await buildContextMessages(id);
+  const chatMessages = await buildContextMessages(id, access.userId);
   chatMessages.push({ role: "user", content: parsed.data.content });
   await db
     .insert(messages)
@@ -125,6 +195,12 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+
+  // Trust gate: an anonymous user sharing financial specifics gets nudged to
+  // set up an account so we can save their roadmap. The chat still proceeds.
+  if (access.userId == null && mentionsFinancialSpecifics(parsed.data.content)) {
+    res.write(`data: ${JSON.stringify({ authRequired: true })}\n\n`);
+  }
 
   let fullResponse = "";
   try {
@@ -158,8 +234,8 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();
 
-  // Silent, out-of-band extraction. Does not affect the streamed reply above.
-  scheduleExtraction(id);
+  // Silent, out-of-band extraction. Authenticated users only.
+  scheduleExtraction(id, access.userId);
 });
 
 router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
@@ -171,6 +247,11 @@ router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
   const parsed = SendOpenaiVoiceMessageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid voice message" });
+    return;
+  }
+  const access = await resolveConversationAccess(req, id);
+  if (!access) {
+    res.status(403).json({ error: "Not your conversation" });
     return;
   }
 
@@ -187,7 +268,13 @@ router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
       `data: ${JSON.stringify({ type: "user_transcript", data: userTranscript })}\n\n`,
     );
 
-    const chatMessages = await buildContextMessages(id);
+    // Trust gate for voice: nudge anonymous users to set up an account when
+    // they speak financial specifics.
+    if (access.userId == null && mentionsFinancialSpecifics(userTranscript)) {
+      res.write(`data: ${JSON.stringify({ type: "auth_required" })}\n\n`);
+    }
+
+    const chatMessages = await buildContextMessages(id, access.userId);
     chatMessages.push({ role: "user", content: userTranscript });
 
     let fullResponse = "";
@@ -230,8 +317,8 @@ router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();
 
-  // Silent, out-of-band extraction. Does not affect the streamed reply above.
-  scheduleExtraction(id);
+  // Silent, out-of-band extraction. Authenticated users only.
+  scheduleExtraction(id, access.userId);
 });
 
 router.post("/openai/transcribe", async (req, res) => {
