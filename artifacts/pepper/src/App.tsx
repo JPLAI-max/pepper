@@ -128,7 +128,9 @@ function Router() {
       <Route path="/opportunities">
         <ProtectedRoute component={Opportunities} path="/opportunities" />
       </Route>
-      <Route path="/reveal" component={Reveal} />
+      <Route path="/reveal">
+        <ProtectedRoute component={Reveal} path="/reveal" />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
