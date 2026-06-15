@@ -351,7 +351,12 @@ export const GetReadinessScoresResponseItem = zod.object({
   "label": zod.string(),
   "score": zod.number(),
   "tier": zod.string(),
-  "summary": zod.string()
+  "summary": zod.string(),
+  "value": zod.number().optional().describe('Deterministic engine score 0-100.'),
+  "band": zod.string().optional().describe('Band label for the value (engine).'),
+  "partial": zod.boolean().optional().describe('True when some component data was absent and excluded.'),
+  "helpingFactor": zod.string().nullish().describe('Single biggest helping factor (educational why).'),
+  "hurtingFactor": zod.string().nullish().describe('Single biggest hurting factor (educational why).')
 })
 export const GetReadinessScoresResponse = zod.array(GetReadinessScoresResponseItem)
 
@@ -374,7 +379,12 @@ export const GetDashboardSummaryResponse = zod.object({
   "label": zod.string(),
   "score": zod.number(),
   "tier": zod.string(),
-  "summary": zod.string()
+  "summary": zod.string(),
+  "value": zod.number().optional().describe('Deterministic engine score 0-100.'),
+  "band": zod.string().optional().describe('Band label for the value (engine).'),
+  "partial": zod.boolean().optional().describe('True when some component data was absent and excluded.'),
+  "helpingFactor": zod.string().nullish().describe('Single biggest helping factor (educational why).'),
+  "hurtingFactor": zod.string().nullish().describe('Single biggest hurting factor (educational why).')
 }).optional(),
   "nextStep": zod.union([zod.object({
   "id": zod.number(),

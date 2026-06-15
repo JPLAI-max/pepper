@@ -6,6 +6,7 @@ import goalsRouter from "./goals";
 import roadmapRouter from "./roadmap";
 import documentsRouter from "./documents";
 import opportunitiesRouter from "./opportunities";
+import scoresRouter from "./scores";
 import dashboardRouter from "./dashboard";
 import openaiRouter from "./openai";
 
@@ -18,6 +19,7 @@ router.use(goalsRouter);
 router.use(roadmapRouter);
 router.use(documentsRouter);
 router.use(opportunitiesRouter);
+router.use(scoresRouter);
 router.use(dashboardRouter);
 router.use(openaiRouter);
 

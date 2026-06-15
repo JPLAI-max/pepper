@@ -17,11 +17,6 @@ import { getSessionUserId, requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
 
-router.get("/scores", requireAuth, async (req, res) => {
-  const profile = await getOrCreateProfile(getSessionUserId(req)!);
-  res.json(computeScores(profile));
-});
-
 router.get("/dashboard/summary", requireAuth, async (req, res) => {
   const userId = getSessionUserId(req)!;
   const profile = await getOrCreateProfile(userId);

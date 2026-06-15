@@ -941,6 +941,23 @@ components:
           type: string
         summary:
           type: string
+        value:
+          type: integer
+          description: Deterministic engine score 0-100.
+        band:
+          type: string
+          description: Band label for the value (engine).
+        partial:
+          type: boolean
+          description: True when some component data was absent and excluded.
+        helpingFactor:
+          type: string
+          nullable: true
+          description: Single biggest helping factor (educational why).
+        hurtingFactor:
+          type: string
+          nullable: true
+          description: Single biggest hurting factor (educational why).
       required:
         - key
         - label

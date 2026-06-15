@@ -1,11 +1,4 @@
-import {
-  db,
-  opportunities,
-  roadmapSteps,
-  documents,
-  goals,
-  pool,
-} from "@workspace/db";
+import { db, opportunities, pool } from "@workspace/db";
 
 async function seed() {
   const existing = await db.select().from(opportunities).limit(1);
@@ -90,69 +83,9 @@ async function seed() {
     },
   ]);
 
-  await db.insert(roadmapSteps).values([
-    {
-      title: "Complete your financial snapshot",
-      description:
-        "Tell Pep about your income, savings, and debt so your plan is truly yours.",
-      status: "in_progress",
-      orderIndex: 0,
-      actionLabel: "Update snapshot",
-    },
-    {
-      title: "Build a 3-month safety net",
-      description:
-        "Set aside a cushion that covers three months of expenses before investing.",
-      status: "todo",
-      orderIndex: 1,
-      actionLabel: "Set savings goal",
-    },
-    {
-      title: "Check and understand your credit",
-      description:
-        "Know your score and the small habits that strengthen it over time.",
-      status: "todo",
-      orderIndex: 2,
-      actionLabel: "Add credit score",
-    },
-    {
-      title: "Map your path to a down payment",
-      description:
-        "We'll figure out your target and a comfortable monthly savings plan.",
-      status: "todo",
-      orderIndex: 3,
-      actionLabel: "Plan down payment",
-    },
-    {
-      title: "Explore your first opportunity",
-      description:
-        "Once you're ready, take a first look at lending and investment options.",
-      status: "todo",
-      orderIndex: 4,
-      actionLabel: "View opportunities",
-    },
-  ]);
-
-  await db.insert(documents).values([
-    { name: "Recent pay stubs (last 2)", category: "Income", status: "needed", orderIndex: 0 },
-    { name: "W-2 / 1099 forms", category: "Income", status: "needed", orderIndex: 1 },
-    { name: "Bank statements (last 2 months)", category: "Assets", status: "needed", orderIndex: 2 },
-    { name: "Government-issued ID", category: "Identity", status: "needed", orderIndex: 3 },
-    { name: "Credit report", category: "Credit", status: "needed", orderIndex: 4 },
-    { name: "Tax returns (last 2 years)", category: "Income", status: "needed", orderIndex: 5 },
-  ]);
-
-  await db.insert(goals).values([
-    {
-      title: "Save for a home down payment",
-      category: "homeownership",
-      targetAmount: 40000,
-      currentAmount: 6500,
-      status: "active",
-      priority: 10,
-      note: "Aiming for a 3-bed starter home.",
-    },
-  ]);
+  // Goals, roadmap steps, and documents are per-user (owned via a real userId
+  // FK) and start empty for each new account — Pepper builds them through the
+  // conversation. Only the global opportunities marketplace is seeded here.
 
   console.log("Seed complete.");
   await pool.end();

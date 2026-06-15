@@ -310,6 +310,16 @@ export interface ReadinessScore {
   score: number;
   tier: string;
   summary: string;
+  /** Deterministic engine score 0-100. */
+  value?: number;
+  /** Band label for the value (engine). */
+  band?: string;
+  /** True when some component data was absent and excluded. */
+  partial?: boolean;
+  /** Single biggest helping factor (educational why). */
+  helpingFactor?: string | null;
+  /** Single biggest hurting factor (educational why). */
+  hurtingFactor?: string | null;
 }
 
 export interface DashboardSummary {

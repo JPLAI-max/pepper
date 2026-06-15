@@ -9,7 +9,7 @@ Pepper ("Pep") is a conversational AI Wealth Coach for building wealth through r
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec (run after EVERY openapi.yaml change)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/scripts run seed` — seed opportunities, roadmap, documents, and a sample goal
+- `pnpm --filter @workspace/scripts run seed` — seed the global opportunities marketplace (per-user goals/roadmap/documents start empty)
 - Required env: `DATABASE_URL`; OpenAI access is via the Replit AI Integrations proxy
 
 ## Stack
@@ -22,7 +22,8 @@ Pepper ("Pep") is a conversational AI Wealth Coach for building wealth through r
 
 ## Where things live
 
-- DB schema (source of truth): `lib/db/src/schema/app.ts` (profiles, goals, roadmapSteps, documents, opportunities) + `conversations`/`messages`. Money is stored as INTEGER whole dollars.
+- DB schema (source of truth): `lib/db/src/schema/app.ts` (profiles, goals, roadmapSteps, documents, opportunities, scores, scoreHistory) + `conversations`/`messages`. Money is stored as INTEGER whole dollars. goals/roadmap/documents carry a real `userId` FK (no default — inserts must set it).
+- Deterministic readiness scoring engine (no AI): `artifacts/api-server/src/lib/scoring.ts` (`computeReadiness` + `persistReadinessScores`). Recomputed after the extraction pass; exposed via GET /scores (`routes/scores.ts`). Persists to `scores` (one row per user+key) and appends `score_history` on value/band change. `insights.ts` `computeScores` still powers the coach context + dashboard summary.
 - API contract (source of truth): `lib/api-spec/openapi.yaml` → generates hooks in `lib/api-client-react/src/generated/` and Zod in `@workspace/api-zod`.
 - API routes: `artifacts/api-server/src/routes/`. AI + voice routes: `routes/openai/index.ts`. Scores + coach system prompt: `src/lib/insights.ts`.
 - Pepper voice/chat client (do not let design subagents touch): `artifacts/pepper/src/pepper/` — `PepperProvider` + `usePepper()` hook.

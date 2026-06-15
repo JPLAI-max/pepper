@@ -5,6 +5,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -99,9 +100,11 @@ export const GOAL_CATEGORIES = [
 
 export const goals = pgTable("goals", {
   id: serial("id").primaryKey(),
-  // Owner. Mirrors profiles.userId — every row carries its owner so access is
-  // always scoped to the session user. Default 1 backfills cleanly.
-  userId: integer("user_id").notNull().default(1),
+  // Owner (real FK). No default: a future insert that forgets userId must
+  // error, never silently land on user 1.
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
   title: text("title").notNull(),
   category: text("category").notNull().default("wealth"),
   targetAmount: integer("target_amount").notNull().default(0),
@@ -132,8 +135,10 @@ export type GoalInput = z.infer<typeof goalInputSchema>;
 // Roadmap steps
 export const roadmapSteps = pgTable("roadmap_steps", {
   id: serial("id").primaryKey(),
-  // Owner. Mirrors profiles.userId so roadmap steps are scoped per user.
-  userId: integer("user_id").notNull().default(1),
+  // Owner (real FK). No default — userId must always be set explicitly.
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
   title: text("title").notNull(),
   description: text("description"),
   status: text("status").notNull().default("todo"),
@@ -168,9 +173,10 @@ export const DOCUMENT_CATEGORIES = [
 
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
-  // Owner. Mirrors profiles.userId so private financial documents are scoped
-  // per user and never served across accounts.
-  userId: integer("user_id").notNull().default(1),
+  // Owner (real FK). No default — userId must always be set explicitly.
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
   name: text("name").notNull(),
   category: text("category").notNull().default("Other"),
   status: text("status").notNull().default("needed"),
@@ -219,3 +225,50 @@ export const opportunities = pgTable("opportunities", {
 });
 
 export type Opportunity = typeof opportunities.$inferSelect;
+
+// Readiness scores. One row per (user, key) holding the latest deterministic
+// score, its band label, and the educational "why" factors. Recomputed by the
+// scoring engine whenever the profile changes.
+export const scores = pgTable(
+  "scores",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    // e.g. homeownership, credit, debt, investing, passive_income, wealth
+    key: text("key").notNull(),
+    value: integer("value").notNull(),
+    band: text("band").notNull(),
+    // Single biggest helping / hurting factor (educational why). Null when no
+    // component data is present yet.
+    helpingFactor: text("helping_factor"),
+    hurtingFactor: text("hurting_factor"),
+    // True when one or more components had no data and were excluded.
+    partial: boolean("partial").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    userKey: unique("scores_user_key").on(t.userId, t.key),
+  }),
+);
+
+export type Score = typeof scores.$inferSelect;
+
+// Append-only log: one row whenever a score's value or band changes.
+export const scoreHistory = pgTable("score_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  key: text("key").notNull(),
+  value: integer("value").notNull(),
+  band: text("band").notNull(),
+  recordedAt: timestamp("recorded_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type ScoreHistoryEntry = typeof scoreHistory.$inferSelect;

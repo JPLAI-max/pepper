@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "./logger";
+import { persistReadinessScores } from "./scoring";
 
 // Cheap/small model — this runs on every user turn, so keep cost down.
 const EXTRACT_MODEL = process.env.EXTRACT_MODEL ?? "gpt-4o-mini";
@@ -274,4 +275,12 @@ export async function extractAndPersist(
     { userId, conversationId, changed: changes.map((c) => c.field) },
     "Extraction persisted profile changes",
   );
+
+  // Profile data changed → recompute readiness scores. Owns its errors so a
+  // scoring failure never breaks the (fire-and-forget) extraction pass.
+  try {
+    await persistReadinessScores(userId);
+  } catch (err) {
+    logger.warn({ userId, err }, "Score recompute after extraction failed");
+  }
 }
