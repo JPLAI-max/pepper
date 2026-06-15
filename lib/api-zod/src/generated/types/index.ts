@@ -36,6 +36,8 @@ export * from './profile';
 export * from './profileUpdate';
 export * from './profileUpdatePreferredVoice';
 export * from './readinessScore';
+export * from './requestUploadUrlInput';
+export * from './requestUploadUrlOutput';
 export * from './roadmapInput';
 export * from './roadmapInputStatus';
 export * from './roadmapStep';

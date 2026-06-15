@@ -22,6 +22,7 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetProfileResponse = zod.object({
   "id": zod.number(),
+  "userId": zod.number(),
   "displayName": zod.string(),
   "monthlyIncome": zod.number(),
   "monthlyExpenses": zod.number(),
@@ -31,6 +32,8 @@ export const GetProfileResponse = zod.object({
   "creditScore": zod.number(),
   "preferredVoice": zod.string(),
   "onboarded": zod.boolean(),
+  "nextAction": zod.string().nullish(),
+  "readyForReveal": zod.boolean(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -52,6 +55,7 @@ export const UpdateProfileBody = zod.object({
 
 export const UpdateProfileResponse = zod.object({
   "id": zod.number(),
+  "userId": zod.number(),
   "displayName": zod.string(),
   "monthlyIncome": zod.number(),
   "monthlyExpenses": zod.number(),
@@ -61,6 +65,8 @@ export const UpdateProfileResponse = zod.object({
   "creditScore": zod.number(),
   "preferredVoice": zod.string(),
   "onboarded": zod.boolean(),
+  "nextAction": zod.string().nullish(),
+  "readyForReveal": zod.boolean(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -411,6 +417,26 @@ export const TranscribeOpenaiAudioBody = zod.object({
 
 export const TranscribeOpenaiAudioResponse = zod.object({
   "text": zod.string()
+})
+
+
+/**
+ * @summary Request a presigned URL for a direct file upload
+ */
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})
 })
 
 

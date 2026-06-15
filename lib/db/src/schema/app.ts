@@ -9,9 +9,25 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-// Singleton financial snapshot for the (single) user in this first build.
+// Identity. Single-user for now (one row), but the data layer is multi-user
+// shaped: profile + history rows carry userId, and all access goes through the
+// getCurrentUserId() resolver. Adding real accounts later = swap the resolver
+// + add a login screen, no table re-plumbing.
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type User = typeof users.$inferSelect;
+
+// Per-user financial snapshot (one row per user).
 export const profiles = pgTable("profiles", {
   id: serial("id").primaryKey(),
+  // Multi-user-shaped: every profile row carries its owner. Default 1 matches
+  // the singleton user (serial id 1) so existing rows backfill cleanly.
+  userId: integer("user_id").notNull().default(1),
   displayName: text("display_name").notNull().default("Friend"),
   monthlyIncome: integer("monthly_income").notNull().default(0),
   monthlyExpenses: integer("monthly_expenses").notNull().default(0),
@@ -21,10 +37,27 @@ export const profiles = pgTable("profiles", {
   creditScore: integer("credit_score").notNull().default(0),
   preferredVoice: text("preferred_voice").notNull().default("female"),
   onboarded: boolean("onboarded").notNull().default(false),
+  // Written by the silent extraction pass after each conversation turn.
+  nextAction: text("next_action"),
+  readyForReveal: boolean("ready_for_reveal").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
 });
+
+// Audit log: one row appended whenever a profile value changes.
+export const profileHistory = pgTable("profile_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().default(1),
+  field: text("field").notNull(),
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  changedAt: timestamp("changed_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type ProfileHistoryEntry = typeof profileHistory.$inferSelect;
 
 export const profileUpdateSchema = createInsertSchema(profiles, {
   monthlyIncome: z.number().int().min(0).max(100_000_000),
@@ -36,7 +69,15 @@ export const profileUpdateSchema = createInsertSchema(profiles, {
   displayName: z.string().min(1).max(80),
   preferredVoice: z.enum(["female", "male"]),
 })
-  .omit({ id: true, updatedAt: true })
+  // Internal fields are never client-writable: userId is resolved server-side,
+  // and nextAction / readyForReveal are written only by the extraction pass.
+  .omit({
+    id: true,
+    updatedAt: true,
+    userId: true,
+    nextAction: true,
+    readyForReveal: true,
+  })
   .partial();
 
 export type Profile = typeof profiles.$inferSelect;

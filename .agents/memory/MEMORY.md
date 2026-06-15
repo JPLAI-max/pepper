@@ -2,3 +2,5 @@
 - [Pepper voice/SSE contract](pepper-voice-sse.md) — text vs voice SSE event shapes differ; voice returns full mp3 in one event (no worklet).
 - [Pepper redesign constraints](pepper-redesign-constraints.md) — restyling must NOT touch src/pepper/ or break Documents @dnd-kit; use two-phase reference-then-match design delegation.
 - [Pepper coach prompt vs JSON extraction](pepper-coach-prompt.md) — coach spec is a natural-language system prompt; don't force the spec's per-turn JSON output (streaming chat would show raw JSON).
+- [Pepper silent extraction](pepper-silent-extraction.md) — after-turn JSON-only OpenAI pass, never shown in chat; persists to profile+history; aggregate-overwrite risk mitigated via carry-forward prompt.
+- [api-zod/client codegen is spec-derived](api-codegen-drift.md) — generated files must match openapi.yaml; never hand-edit them. Types in generated output but absent from the spec get wiped by any codegen, breaking dependents.

@@ -2,27 +2,19 @@ import { Router, type IRouter } from "express";
 import { asc, desc, eq } from "drizzle-orm";
 import {
   db,
-  profiles,
   goals,
   roadmapSteps,
   documents,
   opportunities,
-  type Profile,
 } from "@workspace/db";
 import {
   computeScores,
   netWorth,
   monthlyCashflow,
 } from "../lib/insights";
+import { getOrCreateProfile } from "../lib/identity";
 
 const router: IRouter = Router();
-
-async function getOrCreateProfile(): Promise<Profile> {
-  const existing = await db.select().from(profiles).limit(1);
-  if (existing[0]) return existing[0];
-  const created = await db.insert(profiles).values({}).returning();
-  return created[0]!;
-}
 
 router.get("/scores", async (_req, res) => {
   const profile = await getOrCreateProfile();

@@ -1,16 +1,10 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, profiles, type Profile } from "@workspace/db";
+import { db, profiles } from "@workspace/db";
 import { UpdateProfileBody } from "@workspace/api-zod";
+import { getOrCreateProfile } from "../lib/identity";
 
 const router: IRouter = Router();
-
-async function getOrCreateProfile(): Promise<Profile> {
-  const existing = await db.select().from(profiles).limit(1);
-  if (existing[0]) return existing[0];
-  const created = await db.insert(profiles).values({}).returning();
-  return created[0]!;
-}
 
 router.get("/profile", async (_req, res) => {
   const profile = await getOrCreateProfile();

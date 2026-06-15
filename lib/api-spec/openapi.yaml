@@ -24,6 +24,8 @@ tags:
     description: Dashboard aggregates and readiness scores
   - name: openai
     description: Pepper AI chat and voice operations
+  - name: storage
+    description: Object storage upload and retrieval
 paths:
   /healthz:
     get:
@@ -435,6 +437,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiTranscribeOutput"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL for a direct file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlInput"
+      responses:
+        "200":
+          description: Presigned upload URL and normalized object path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlOutput"
 components:
   schemas:
     HealthStatus:
@@ -452,10 +472,39 @@ components:
       required:
         - error
 
+    RequestUploadUrlInput:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+      required:
+        - name
+        - size
+        - contentType
+    RequestUploadUrlOutput:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/RequestUploadUrlInput"
+      required:
+        - uploadURL
+        - objectPath
+        - metadata
+
     Profile:
       type: object
       properties:
         id:
+          type: integer
+        userId:
           type: integer
         displayName:
           type: string
@@ -475,11 +524,16 @@ components:
           type: string
         onboarded:
           type: boolean
+        nextAction:
+          type: [string, "null"]
+        readyForReveal:
+          type: boolean
         updatedAt:
           type: string
           format: date-time
       required:
         - id
+        - userId
         - displayName
         - monthlyIncome
         - monthlyExpenses
@@ -489,6 +543,7 @@ components:
         - creditScore
         - preferredVoice
         - onboarded
+        - readyForReveal
         - updatedAt
     ProfileUpdate:
       type: object

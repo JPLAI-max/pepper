@@ -8,6 +8,7 @@
 
 export interface Profile {
   id: number;
+  userId: number;
   displayName: string;
   monthlyIncome: number;
   monthlyExpenses: number;
@@ -17,5 +18,8 @@ export interface Profile {
   creditScore: number;
   preferredVoice: string;
   onboarded: boolean;
+  /** @nullable */
+  nextAction?: string | null;
+  readyForReveal: boolean;
   updatedAt: Date;
 }

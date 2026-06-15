@@ -4,11 +4,9 @@ import {
   db,
   conversations,
   messages,
-  profiles,
   goals,
   roadmapSteps,
   documents,
-  type Profile,
 } from "@workspace/db";
 import {
   CreateOpenaiConversationBody,
@@ -23,6 +21,9 @@ import {
   ensureCompatibleFormat,
 } from "@workspace/integrations-openai-ai-server/audio";
 import { buildCoachContext, computeScores } from "../../lib/insights";
+import { getCurrentUserId, getOrCreateProfile } from "../../lib/identity";
+import { extractAndPersist } from "../../lib/extraction";
+import { logger } from "../../lib/logger";
 
 const router: IRouter = Router();
 
@@ -31,16 +32,25 @@ const VOICE_MAP: Record<string, "shimmer" | "onyx"> = {
   male: "onyx",
 };
 
-async function getProfile(): Promise<Profile> {
-  const existing = await db.select().from(profiles).limit(1);
-  if (existing[0]) return existing[0];
-  const created = await db.insert(profiles).values({}).returning();
-  return created[0]!;
+/**
+ * Fire-and-forget the silent extraction pass for a finished user turn. Never
+ * touches the response stream and never throws into the request — its output is
+ * persisted to the profile, never sent to the chat UI.
+ */
+function scheduleExtraction(conversationId: number): void {
+  void (async () => {
+    try {
+      const userId = await getCurrentUserId();
+      await extractAndPersist(conversationId, userId);
+    } catch (err) {
+      logger.error({ err, conversationId }, "Silent extraction failed");
+    }
+  })();
 }
 
 async function buildContextMessages(conversationId: number) {
   const [profile, allGoals, steps, docs, history] = await Promise.all([
-    getProfile(),
+    getOrCreateProfile(),
     db.select().from(goals),
     db
       .select()
@@ -147,6 +157,9 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
   }
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();
+
+  // Silent, out-of-band extraction. Does not affect the streamed reply above.
+  scheduleExtraction(id);
 });
 
 router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
@@ -216,6 +229,9 @@ router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
 
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();
+
+  // Silent, out-of-band extraction. Does not affect the streamed reply above.
+  scheduleExtraction(id);
 });
 
 router.post("/openai/transcribe", async (req, res) => {

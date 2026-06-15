@@ -13,8 +13,21 @@ export interface Error {
   error: string;
 }
 
+export interface RequestUploadUrlInput {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface RequestUploadUrlOutput {
+  uploadURL: string;
+  objectPath: string;
+  metadata: RequestUploadUrlInput;
+}
+
 export interface Profile {
   id: number;
+  userId: number;
   displayName: string;
   monthlyIncome: number;
   monthlyExpenses: number;
@@ -24,6 +37,9 @@ export interface Profile {
   creditScore: number;
   preferredVoice: string;
   onboarded: boolean;
+  /** @nullable */
+  nextAction?: string | null;
+  readyForReveal: boolean;
   updatedAt: string;
 }
 
