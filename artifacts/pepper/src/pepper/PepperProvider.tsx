@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { useVoiceRecorder } from "@workspace/integrations-openai-ai-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getGetProfileQueryKey } from "@workspace/api-client-react";
 import type {
   PepperContextValue,
   PepperMessage,
@@ -123,6 +125,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   const dictationChunksRef = useRef<Blob[]>([]);
   const startListeningRef = useRef<() => Promise<void>>(async () => {});
   const recorder = useVoiceRecorder();
+  const queryClient = useQueryClient();
 
   const wakeWordSupported = getSpeechRecognitionCtor() !== null;
   const busy = status === "thinking" || status === "speaking";
@@ -287,9 +290,12 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         );
       } finally {
         setStatus("idle");
+        // The turn may have advanced the coach's extraction (e.g. flipping
+        // readyForReveal); refresh the profile so the reveal trigger can react.
+        void queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
       }
     },
-    [busy, ensureConversation],
+    [busy, ensureConversation, queryClient],
   );
 
   const sendVoiceBlob = useCallback(
@@ -353,9 +359,12 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         ]);
       } finally {
         setStatus("idle");
+        // The turn may have advanced the coach's extraction (e.g. flipping
+        // readyForReveal); refresh the profile so the reveal trigger can react.
+        void queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
       }
     },
-    [ensureConversation, voice, playAudio],
+    [ensureConversation, voice, playAudio, queryClient],
   );
 
   const startListening = useCallback(async () => {

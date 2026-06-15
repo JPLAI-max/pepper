@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pepper — Your Position</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg0:#0b0908; --bg1:#171210;
+    --ember:#ff7e3f; --copper:#d8531f; --amber:#ffb454; --gold:#ffd98a; --deep:#5e2410;
+    --ink:#f6ece1; --muted:#a8978a; --faint:#6e6258;
+    --line:rgba(255,180,120,.14); --card:rgba(28,21,17,.55);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(216,83,31,.14) 0%, rgba(216,83,31,0) 55%),
+      linear-gradient(180deg,var(--bg1),var(--bg0) 40%);
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;gap:12px;
+    padding:16px 22px;
+    background:linear-gradient(180deg, rgba(11,9,8,.9), rgba(11,9,8,0));
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .mini-orb{position:relative;width:34px;height:34px;border-radius:50%;overflow:hidden;
+    background:radial-gradient(circle at 36% 30%, #ffe6bf, var(--amber) 18%, var(--ember) 48%, var(--copper) 78%, var(--deep));
+    box-shadow:0 0 18px rgba(255,126,63,.5);animation:breathe 6s ease-in-out infinite}
+  .wordmark{font-weight:600;letter-spacing:.16em;font-size:.82rem;color:var(--ink)}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  main{max-width:720px;margin:0 auto;padding:0 22px 120px}
+  section{
+    padding:64px 0;
+    opacity:0;transform:translateY(26px);
+    transition:opacity .9s ease, transform .9s ease;
+  }
+  section.visible{opacity:1;transform:none}
+  .eyebrow{font-size:.74rem;letter-spacing:.28em;text-transform:uppercase;color:var(--ember);margin-bottom:14px;font-weight:600}
+  .display{font-family:'Fraunces',Georgia,serif;font-weight:300;line-height:1.15;letter-spacing:.005em}
+  h1.display{font-size:2.5rem}
+  h2.display{font-size:1.9rem;margin-bottom:8px}
+  .lede{color:var(--muted);font-size:1.05rem;line-height:1.6;margin-top:14px;max-width:46ch}
+  .intro{min-height:78vh;display:flex;flex-direction:column;justify-content:center;text-align:left}
+  .intro h1{font-size:2.9rem}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:26px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+  .stat .label{font-size:.8rem;color:var(--muted);margin-bottom:8px}
+  .stat .num{font-family:'Fraunces',serif;font-weight:400;font-size:1.9rem;letter-spacing:-.01em}
+  .stat .num.pos{color:var(--gold)}
+  .stat.span2{grid-column:1 / -1;background:linear-gradient(135deg, rgba(255,126,63,.12), rgba(216,83,31,.05));border-color:rgba(255,180,120,.28)}
+  .stat.span2 .num{font-size:2.4rem}
+  .goal-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;margin-top:24px}
+  .goal-card .goal-name{font-family:'Fraunces',serif;font-size:1.7rem;color:var(--ink);margin:6px 0 12px}
+  .goal-meta{display:flex;gap:24px;flex-wrap:wrap;color:var(--muted);font-size:.92rem}
+  .goal-meta b{color:var(--ink);font-weight:500}
+  .scores{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:26px}
+  .score{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 14px;text-align:center}
+  .ring{position:relative;width:96px;height:96px;margin:0 auto 12px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .val{position:absolute;inset:0;display:grid;place-items:center;font-family:'Fraunces',serif;font-size:1.5rem;font-weight:400}
+  .score .name{font-size:.86rem;color:var(--ink);font-weight:500}
+  .score .band{font-size:.74rem;color:var(--muted);margin-top:3px}
+  .score-note{color:var(--muted);font-size:.92rem;margin-top:22px;line-height:1.6}
+  .score-note .pill{color:var(--gold)}
+  .obstacle{background:linear-gradient(135deg, rgba(216,83,31,.12), rgba(216,83,31,.03));border:1px solid rgba(255,180,120,.24);border-radius:18px;padding:20px;margin-top:24px}
+  .obstacle .label{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ember);margin-bottom:8px}
+  .obstacle p{color:var(--ink);font-size:1.02rem;line-height:1.5}
+  .timeline{margin-top:30px;position:relative;padding-left:30px}
+  .timeline::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--ember),rgba(255,126,63,.15))}
+  .step{position:relative;padding:0 0 26px}
+  .step::before{content:"";position:absolute;left:-26px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 4px rgba(255,126,63,.15)}
+  .step .when{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .step .what{color:var(--ink);font-size:1rem;line-height:1.5;margin-top:5px}
+  .opps{display:flex;flex-direction:column;gap:13px;margin-top:24px}
+  .opp{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .opp .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .opp .title{font-weight:600;color:var(--ink)}
+  .opp .tag{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .opp .desc{color:var(--muted);font-size:.92rem;line-height:1.5;margin-top:8px}
+  .opp.later{opacity:.6}
+  .opp.later .tag{color:var(--copper);border-color:rgba(216,83,31,.4)}
+  .close{text-align:center;padding-top:40px}
+  .close h2{font-size:2.2rem}
+  .cta{display:inline-flex;align-items:center;gap:10px;margin-top:26px;background:linear-gradient(180deg,var(--amber),var(--ember));color:#3a1606;font-weight:600;font-size:1rem;border:none;border-radius:999px;padding:15px 30px;cursor:pointer;transition:transform .15s ease}
+  .cta:hover{transform:scale(1.04)}
+  .reassure{color:var(--faint);font-size:.84rem;margin-top:18px}
+  @media (max-width:560px){
+    .scores{grid-template-columns:1fr 1fr}
+    .intro h1{font-size:2.2rem}
+    h1.display{font-size:2rem}
+  }
+  @media (prefers-reduced-motion:reduce){
+    section{opacity:1;transform:none;transition:none}
+    .mini-orb{animation:none}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="mini-orb"></div>
+    <div class="wordmark">PEPPER</div>
+  </header>
+
+  <main>
+    <section class="intro visible">
+      <div class="eyebrow">Here's what I found</div>
+      <h1 class="display">Now you can see<br>the whole picture, <span style="color:var(--gold)" data-bind="name">Jordan</span>.</h1>
+      <p class="lede">You're closer than it feels. Below is exactly where you stand today, what's in the way, and the fastest realistic path to your goal.</p>
+    </section>
+
+    <section>
+      <div class="eyebrow">Your position</div>
+      <h2 class="display">Where you stand today</h2>
+      <div class="stats">
+        <div class="stat"><div class="label">Monthly income</div><div class="num" data-bind="income">$8,000</div></div>
+        <div class="stat"><div class="label">Monthly cashflow</div><div class="num pos" data-bind="cashflow">$3,100</div></div>
+        <div class="stat"><div class="label">Total assets</div><div class="num" data-bind="assets">$30,000</div></div>
+        <div class="stat"><div class="label">Total debt</div><div class="num" data-bind="debt">$24,000</div></div>
+        <div class="stat span2"><div class="label">Net worth</div><div class="num pos" data-bind="networth">$6,000</div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Your goal</div>
+      <h2 class="display">What you're working toward</h2>
+      <div class="goal-card">
+        <div class="goal-name" data-bind="goal">Buy your first home</div>
+        <div class="goal-meta">
+          <span>Target: <b data-bind="goal-timeline">~18 months</b></span>
+          <span>Why it matters: <b data-bind="goal-motivation">Security for your family</b></span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Your readiness</div>
+      <h2 class="display">Six ways of looking at it</h2>
+      <p class="lede">These aren't a verdict — they're a starting line. Each one comes with a way to move it.</p>
+      <div class="scores" id="scores"></div>
+      <p class="score-note">Biggest lever right now: <span class="pill">your debt-to-income</span>. Bringing it down moves your homeownership score the fastest.</p>
+    </section>
+
+    <section>
+      <div class="eyebrow">Your roadmap</div>
+      <h2 class="display">The fastest realistic path</h2>
+      <div class="obstacle">
+        <div class="label">Primary obstacle</div>
+        <p data-bind="obstacle">Your savings rate and debt load are the two things standing between you and a mortgage approval — both are fixable on your current income.</p>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Your opportunities</div>
+      <h2 class="display">Tools that may help</h2>
+      <p class="lede">Informational only — nothing to apply for here. These are the options worth understanding as you follow the plan.</p>
+      <div class="opps" id="opps"></div>
+    </section>
+
+    <section class="close">
+      <div class="eyebrow" style="text-align:center">This is your starting line</div>
+      <h2 class="display">You have a plan now.</h2>
+      <button class="cta" onclick="location.href='/dashboard'">Continue to your dashboard →</button>
+      <div class="reassure">Your information is private, encrypted, and yours alone.</div>
+    </section>
+  </main>
+
+<script>
+  // ---- LIVE DATA (replaces the sample data block; design unchanged) ---------
+  // Every value below is fetched for the SESSION user only via the auth-scoped
+  // API. Sections with no data are hidden gracefully — never a fabricated or
+  // "$0/unfilled" value.
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+  const fmtUSD = (n) => Number(n).toLocaleString("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 });
+  const HORIZON_LABEL = { immediate:"Immediate", "30_day":"30 days", "90_day":"90 days", "1_year":"1 year", "5_year":"5 years" };
+
+  function ringColor(v){ return v>=80 ? 'var(--gold)' : v>=60 ? 'var(--amber)' : 'var(--copper)'; }
+
+  async function getJSON(url){
+    try{
+      const r = await fetch(url, { credentials:"same-origin", headers:{ Accept:"application/json" } });
+      if(!r.ok) return null;
+      return await r.json();
+    }catch{ return null; }
+  }
+
+  const sectionOf = (el) => el ? el.closest("section") : null;
+  const hide = (el) => { if(el) el.style.display = "none"; };
+  const setBind = (key, value) => {
+    const el = document.querySelector(`[data-bind="${key}"]`);
+    if(el) el.textContent = value;
+    return el;
+  };
+
+  (async () => {
+    const [profile, goals, scores, roadmap, opps] = await Promise.all([
+      getJSON("/api/profile"),
+      getJSON("/api/goals"),
+      getJSON("/api/scores"),
+      getJSON("/api/roadmap"),
+      getJSON("/api/opportunities/matches"),
+    ]);
+
+    // ---- Intro: name (clear the sample placeholder if we have no name) -----
+    setBind("name", profile && profile.displayName ? profile.displayName : "");
+
+    // ---- Position ----------------------------------------------------------
+    if (profile) {
+      const assets = (profile.cashSavings || 0) + (profile.otherAssets || 0);
+      const debt = profile.totalDebt || 0;
+      const income = profile.monthlyIncome || 0;
+      const cashflow = income - (profile.monthlyExpenses || 0);
+      const networth = assets - debt;
+      let shown = 0;
+      const stat = (key, ok, val) => {
+        const el = document.querySelector(`[data-bind="${key}"]`);
+        if(!el) return;
+        if(ok){ el.textContent = fmtUSD(val); shown++; }
+        else hide(el.closest(".stat"));
+      };
+      stat("income", income > 0, income);
+      stat("cashflow", income > 0, cashflow);
+      stat("assets", assets > 0, assets);
+      stat("debt", debt > 0, debt);
+      stat("networth", (assets > 0 || debt > 0), networth);
+      if(shown === 0) hide(sectionOf(document.querySelector(".stats")));
+    } else {
+      hide(sectionOf(document.querySelector(".stats")));
+    }
+
+    // ---- Goal: highest priority, then most recent --------------------------
+    const goalList = Array.isArray(goals) ? goals : [];
+    const active = goalList.filter((g) => (g.status || "active") === "active");
+    const pool = active.length ? active : goalList;
+    const goal = pool.slice().sort((a, b) =>
+      (b.priority || 0) - (a.priority || 0) || (b.id || 0) - (a.id || 0))[0] || null;
+    if (goal) {
+      setBind("goal", goal.title);
+      const tEl = setBind("goal-timeline", goal.targetDate || "");
+      if(!goal.targetDate) hide(tEl && tEl.closest("span"));
+      const mEl = setBind("goal-motivation", goal.note || "");
+      if(!goal.note) hide(mEl && mEl.closest("span"));
+    } else {
+      hide(sectionOf(document.querySelector(".goal-card")));
+    }
+
+    // ---- Readiness scores --------------------------------------------------
+    const scoreList = (Array.isArray(scores) ? scores : [])
+      .filter((s) => typeof s.value === "number")
+      .map((s) => ({ name: s.label, value: s.value, band: s.band, hurtingFactor: s.hurtingFactor }));
+    if (scoreList.length) {
+      const C = 2 * Math.PI * 42;
+      document.getElementById('scores').innerHTML = scoreList.map(s=>{
+        const off = C * (1 - s.value/100);
+        return `<div class="score">
+          <div class="ring">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="42" fill="none" stroke="rgba(255,180,120,.1)" stroke-width="7"/>
+              <circle cx="48" cy="48" r="42" fill="none" stroke="${ringColor(s.value)}" stroke-width="7"
+                stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}"/>
+            </svg>
+            <div class="val">${s.value}</div>
+          </div>
+          <div class="name">${esc(s.name)}</div>
+          <div class="band">${esc(s.band)}</div>
+        </div>`;
+      }).join('');
+      // Biggest lever = the lowest-scoring component's hurting factor.
+      const lever = scoreList.slice().sort((a, b) => a.value - b.value).find((s) => s.hurtingFactor);
+      const note = document.querySelector(".score-note");
+      if (lever && lever.hurtingFactor) {
+        note.innerHTML = `Biggest lever right now: <span class="pill">${esc(lever.hurtingFactor)}</span>.`;
+      } else {
+        hide(note);
+      }
+    } else {
+      hide(sectionOf(document.getElementById('scores')));
+    }
+
+    // ---- Roadmap: primary obstacle + horizon steps in order ----------------
+    const obstacleEl = document.querySelector('[data-bind="obstacle"]');
+    const obstacle = roadmap && roadmap.primaryObstacle ? roadmap.primaryObstacle.detail : null;
+    if (obstacle) { if (obstacleEl) obstacleEl.textContent = obstacle; }
+    else hide(document.querySelector(".obstacle"));
+
+    const steps = (roadmap && Array.isArray(roadmap.steps) ? roadmap.steps : [])
+      .map((s) => ({ when: HORIZON_LABEL[s.horizon] || s.horizon, what: s.action }))
+      .filter((s) => s.what);
+    if (steps.length) {
+      document.getElementById('timeline').innerHTML = steps.map(s=>
+        `<div class="step"><div class="when">${esc(s.when)}</div><div class="what">${esc(s.what)}</div></div>`
+      ).join('');
+    } else {
+      hide(document.getElementById('timeline'));
+    }
+    if (!obstacle && steps.length === 0) hide(sectionOf(document.getElementById('timeline')));
+
+    // ---- Opportunities: live matches + dimmed "coming later" ---------------
+    const live = (opps && Array.isArray(opps.matches) ? opps.matches : [])
+      .map((o) => ({ title: o.title, tag: o.category, desc: o.description, later: false }));
+    const later = (opps && Array.isArray(opps.comingLater) ? opps.comingLater : [])
+      .map((o) => ({ title: o.title, tag: "Coming later", desc: o.description, later: true }));
+    const oppList = [...live, ...later];
+    if (oppList.length) {
+      document.getElementById('opps').innerHTML = oppList.map(o=>
+        `<div class="opp ${o.later?'later':''}"><div class="top"><div class="title">${esc(o.title)}</div><div class="tag">${esc(o.tag)}</div></div><div class="desc">${esc(o.desc)}</div></div>`
+      ).join('');
+    } else {
+      hide(sectionOf(document.getElementById('opps')));
+    }
+
+    // ---- Reveal sections on scroll (unchanged behavior) --------------------
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold:0.15 });
+    document.querySelectorAll('section:not(.visible)').forEach(s=>{
+      if (s.style.display === "none") return;
+      io.observe(s);
+    });
+  })();
+</script>
+</body>
+</html>

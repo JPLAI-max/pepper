@@ -20,8 +20,49 @@ import Roadmap from "@/pages/Roadmap";
 import Readiness from "@/pages/Readiness";
 import Documents from "@/pages/Documents";
 import Opportunities from "@/pages/Opportunities";
+import Reveal from "@/pages/Reveal";
 
 const queryClient = new QueryClient();
+
+const REVEAL_SHOWN_KEY = "pepper.revealShown";
+
+// When the coach marks the session ready, take the user to "The Reveal" once.
+// Re-arms if readiness is ever reset so a future reveal can fire again.
+function RevealRedirect() {
+  const { isAuthenticated } = useAuth();
+  const { data: profile } = useGetProfile({
+    query: { enabled: isAuthenticated, queryKey: getGetProfileQueryKey() },
+  });
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated || !profile) return;
+    if (!profile.readyForReveal) {
+      try {
+        localStorage.removeItem(REVEAL_SHOWN_KEY);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    if (location === "/reveal") return;
+    let shown = false;
+    try {
+      shown = localStorage.getItem(REVEAL_SHOWN_KEY) === "1";
+    } catch {
+      /* ignore */
+    }
+    if (shown) return;
+    try {
+      localStorage.setItem(REVEAL_SHOWN_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setLocation("/reveal");
+  }, [isAuthenticated, profile, location, setLocation]);
+
+  return null;
+}
 
 function ProtectedRoute({ component: Component }: { component: any, path: string }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -87,6 +128,7 @@ function Router() {
       <Route path="/opportunities">
         <ProtectedRoute component={Opportunities} path="/opportunities" />
       </Route>
+      <Route path="/reveal" component={Reveal} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -108,6 +150,7 @@ function App() {
               <AuthModalProvider>
                 <Router />
                 <GlobalAssistant />
+                <RevealRedirect />
               </AuthModalProvider>
             </WouterRouter>
           </PepperProvider>
