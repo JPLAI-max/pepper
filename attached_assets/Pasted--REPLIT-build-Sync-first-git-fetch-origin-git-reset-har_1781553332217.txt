@@ -1,0 +1,20 @@
+→ REPLIT (build)
+
+Sync first: git fetch origin && git reset --hard origin/main.
+
+Build — Roadmap engine. Deterministic, grounded in the user's stored numbers. Turns profile + primary goal + scores into a structured action plan. Educational only — never "you qualify," never "buy this," never an invented number.
+
+PART 1 — GET /scores read-only fix.
+- Remove the current-scores upsert/write from the GET /scores handler. Score persistence happens only on the recompute-after-extraction path. GET reads persisted scores; if none exist yet, compute in memory and return WITHOUT writing.
+
+PART 2 — Roadmap engine (server-side, deterministic — no AI/LLM call, no randomness).
+- Input: the logged-in user's profile, primary goal, and computed scores.
+- Identify the primary obstacle for the goal using the score components (Doc 13 logic): e.g. goal = buy home → lowest of credit / savings / DTI / income-stability becomes the primary obstacle. Map obstacle → roadmap focus: low credit → credit improvement; high DTI → debt reduction; low savings → savings acceleration; poor cash flow → expense optimization.
+- Compute opportunities from real stored numbers: spending leaks (dining, subscriptions, oversized car payment), high-interest debt, monthly surplus. Quantify monthly + annual impact from their actual figures.
+- Generate structured steps across horizons: Immediate, 30-Day, 90-Day, 1-Year, 5-Year. Every step must be specific and grounded in their numbers — "Redirect $X/mo from dining into a dedicated down-payment account," never "save more." If a needed number isn't present, use a specific non-numeric action; never fabricate a figure.
+
+PART 3 — Persistence + endpoint.
+- Store steps in roadmap_steps (userId-scoped: horizon, action text, status, order). Regenerate (replace) when profile or scores change.
+- Add GET /roadmap (requireAuth, scoped to session user) returning the structured roadmap: current position, primary obstacle, opportunities, and the horizon steps.
+
+Do NOT build the Reveal UI or opportunity/product matching in this task — only the GET /scores fix, the roadmap engine, persistence, and the endpoint.
