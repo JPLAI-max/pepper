@@ -32,6 +32,26 @@ containing a number sets pending; an affirmative reply while pending sends
 go to the server — the value is extracted server-side from history under the
 session userId.
 
+**Verbatim render (the user is strict about this):** the overlay shell (orb/FAB,
+backdrop, panel, markup, animations, full multi-theme `THEMES` object) is a
+byte-for-byte port of the user's source HTML — only the demo `handle()` is
+replaced. The source's ember is a WARM palette (orange `--accent`, dark warm bg),
+NOT Pepper's app charcoal/`#E85D3F` tokens; do not substitute the app's global
+tokens for the source's. Allowed deviations are only those forced by integration:
+tokens/selectors are scoped to the component's own root instead of `:root`/`body`
+(shadcn already owns same-named globals like `--card`/`--muted`/`--accent`, so
+`:root` would clobber the app), the breathe keyframe is namespaced (global
+injected `<style>`), and the demo dashboard + theme switcher aren't rendered
+(Pepper pages are the host; ember ships locked).
+**Why:** the user re-pastes the source and diffs against it. If the port ever
+drifts, re-request the HTML and diff — never reconstruct the shell from memory.
+
+**Confirm-gate must require fill INTENT, not just a number:** arm
+`pendingFillRef` only when the message has an update intent (financial field or
+set/change verb) AND a value. A bare number in an explain question
+("what does 72 mean?") followed by "yes" must not send `commit:true`, or it
+fires an unintended persistence/recompute pass.
+
 **Scope decisions:** overlay is mounted in `AppLayout` (so all app-shell screens)
 and hidden on `/reveal`. `/onboarding` is a deliberate full-screen takeover OUTSIDE
 `AppLayout` and keeps the immersive PepperAssistant (dictation into form fields) —

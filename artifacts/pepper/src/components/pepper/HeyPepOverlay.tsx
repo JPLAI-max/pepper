@@ -185,7 +185,11 @@ const AFFIRMATIVE =
   /\b(yes|yep|yeah|yup|correct|confirm|confirmed|do it|go ahead|sounds? (good|right)|that'?s right|save( it)?|sure|right|ok(ay)?)\b/i;
 const NEGATIVE =
   /\b(no|nope|nah|cancel|don'?t|do not|wrong|nevermind|never mind|not right|that'?s wrong)\b/i;
-// A stated dollar figure / number to set, e.g. "9000", "$9,000", "1200".
+// A proposed fill = an explicit update intent (financial field or set/change
+// verb) PLUS a number. A bare number inside an explain question
+// ("what does 72 mean?") must NOT arm the confirm-gate.
+const FILL_INTENT =
+  /\b(income|salary|wage|debt|owe|savings?|save|credit|rent|mortgage|set|update|change|make it|raise|lower)\b/i;
 const HAS_VALUE = /\$?\s?\d[\d,]{1,}(?:\.\d+)?/;
 
 const DEFAULT_PLACEHOLDER = "Ask Pepper, or tell me a number…";
@@ -240,7 +244,7 @@ export function HeyPepOverlay() {
 
     const affirmative = AFFIRMATIVE.test(t) && !NEGATIVE.test(t);
     const negative = NEGATIVE.test(t);
-    const hasValue = HAS_VALUE.test(t);
+    const proposesFill = HAS_VALUE.test(t) && FILL_INTENT.test(t);
 
     // Confirm-before-commit: only a "yes" to a pending value proposal commits.
     const commit = pendingFillRef.current && affirmative;
@@ -256,8 +260,9 @@ export function HeyPepOverlay() {
       void queryClient.invalidateQueries();
     } else if (negative) {
       pendingFillRef.current = false;
-    } else if (hasValue) {
-      // A value was stated — the coach will ask the user to confirm it.
+    } else if (proposesFill) {
+      // An explicit update + value was stated — the coach will ask the user to
+      // confirm it before anything is written.
       pendingFillRef.current = true;
     }
   };
