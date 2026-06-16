@@ -37,6 +37,21 @@ proposed fields. Only /documents/confirm-extraction writes, via
 extractor uses: diff → update profile → profile_history → recompute scores +
 roadmap). Confirm accepts only the 6 whitelisted numeric profile fields.
 
+## Two upload entry points share one pipeline
+The upload→ingest→editable-card→confirm flow lives in a single hook
+(`useDocumentUpload`) + a shared `DocumentConfirmCard`. Two surfaces consume it:
+the Pepper chat panel (attach button / panel drop, used on public+onboarding)
+and a page-level `GlobalDropZone` (drag a file anywhere → ember "Drop to share
+with Pepper" overlay), mounted in `AppLayout` for the authenticated app-shell
+screens. They never collide: on app-shell routes the chat panel is suppressed in
+`App.tsx` (the Hey Pep overlay is the assistant), and onboarding doesn't use
+`AppLayout`. Each surface gets its OWN hook instance — a file is only ever
+handled by one surface at a time, so no shared card coordination is needed.
+**Why:** the global layer needs the card to render even though the chat panel
+isn't visible on those screens, so it renders its own floating ember surface.
+**How to apply:** window-level drag listeners are auth-gated (attached only when
+isAuthenticated) and reset on blur/visibilitychange so the overlay can't stick.
+
 ## File handling
 Allowed types: application/pdf, image/png, image/jpeg; size ≤ 15MB. Re-validate the
 ACTUAL stored object's contentType+size (client values are advisory); delete the

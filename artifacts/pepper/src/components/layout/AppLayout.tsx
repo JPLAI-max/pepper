@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useGetProfile } from "@workspace/api-client-react";
 import { useAuth } from "@/auth";
 import { HeyPepOverlay } from "@/components/pepper/HeyPepOverlay";
+import { GlobalDropZone } from "@/components/pepper/GlobalDropZone";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -132,6 +133,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* "Hey Pep" overlay — the assistant surface on authenticated app
           screens. Suppressed on /reveal so the reveal stays a clean takeover. */}
       {location !== "/reveal" && <HeyPepOverlay />}
+
+      {/* Page-level drag-and-drop: drop a financial document anywhere to share
+          it with Pepper. Suppressed on /reveal alongside the overlay. */}
+      {location !== "/reveal" && <GlobalDropZone />}
     </div>
   );
 }
