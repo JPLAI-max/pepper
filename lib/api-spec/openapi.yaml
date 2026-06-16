@@ -1184,6 +1184,24 @@ components:
       properties:
         content:
           type: string
+        mode:
+          type: string
+          enum: ["overlay"]
+          description: >-
+            Conversation surface. "overlay" routes the coach into Mode B
+            (the "Hey Pep" dashboard overlay) and gates persistence behind
+            an explicit confirmation.
+        section:
+          type: string
+          description: >-
+            The dashboard screen/section the user is viewing, used to give
+            the overlay coach screen-aware context.
+        commit:
+          type: boolean
+          description: >-
+            Overlay-only. When true, this turn is a confirmed fill: run the
+            auth-scoped extraction/persistence pass (and score/roadmap
+            recompute) for the signed-in user. Explain/proposal turns omit it.
       required:
         - content
     OpenaiVoiceMessageInput:

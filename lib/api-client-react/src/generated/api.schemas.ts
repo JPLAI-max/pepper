@@ -427,8 +427,24 @@ export interface OpenaiConversationInput {
   title: string;
 }
 
+/**
+ * Conversation surface. "overlay" routes the coach into Mode B (the "Hey Pep" dashboard overlay) and gates persistence behind an explicit confirmation.
+ */
+export type OpenaiMessageInputMode = typeof OpenaiMessageInputMode[keyof typeof OpenaiMessageInputMode];
+
+
+export const OpenaiMessageInputMode = {
+  overlay: 'overlay',
+} as const;
+
 export interface OpenaiMessageInput {
   content: string;
+  /** Conversation surface. "overlay" routes the coach into Mode B (the "Hey Pep" dashboard overlay) and gates persistence behind an explicit confirmation. */
+  mode?: OpenaiMessageInputMode;
+  /** The dashboard screen/section the user is viewing, used to give the overlay coach screen-aware context. */
+  section?: string;
+  /** Overlay-only. When true, this turn is a confirmed fill: run the auth-scoped extraction/persistence pass (and score/roadmap recompute) for the signed-in user. Explain/proposal turns omit it. */
+  commit?: boolean;
 }
 
 export type OpenaiVoiceMessageInputVoice = typeof OpenaiVoiceMessageInputVoice[keyof typeof OpenaiVoiceMessageInputVoice];

@@ -23,8 +23,16 @@ export interface PepperContextValue {
   voice: PepperVoice;
   setVoice: (voice: PepperVoice) => void;
 
-  /** Send a typed message; assistant reply streams into `messages`. */
-  sendText: (content: string) => Promise<void>;
+  /**
+   * Send a typed message; assistant reply streams into `messages`. Pass
+   * overlay options to drive the "Hey Pep" Mode B coach: `mode: "overlay"`
+   * with the current `section`, and `commit: true` only on a confirmed fill
+   * (which runs the server-side extraction/persistence pass for this turn).
+   */
+  sendText: (
+    content: string,
+    opts?: { mode?: "overlay"; section?: string; commit?: boolean },
+  ) => Promise<void>;
 
   /** Voice conversation: start/stop a spoken turn (records, transcribes, replies, speaks). */
   startListening: () => Promise<void>;

@@ -1,16 +1,16 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { usePepper } from "@/pepper";
-import { Home, Target, Map, Shield, FileText, Briefcase, Menu, LogOut, Loader2, Sparkles, MessageSquare, ChevronRight } from "lucide-react";
+import { Home, Target, Map, Shield, FileText, Briefcase, Menu, LogOut, Loader2, Sparkles, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useGetProfile } from "@workspace/api-client-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/auth";
+import { HeyPepOverlay } from "@/components/pepper/HeyPepOverlay";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { open, setOpen, status, reset } = usePepper();
+  const { reset } = usePepper();
   const { user, logout } = useAuth();
 
   const { data: profile, isLoading } = useGetProfile();
@@ -129,28 +129,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      {/* Floating Pepper Assistant Trigger (Mobile Bottom Center, Desktop Bottom Right) */}
-      <AnimatePresence>
-        {!open && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            onClick={() => setOpen(true)}
-            className="fixed md:bottom-8 md:right-8 bottom-6 left-1/2 md:left-auto transform md:translate-x-0 -translate-x-1/2 z-50 w-14 h-14 bg-card border border-border shadow-[0_8px_30px_rgba(0,0,0,0.4)] rounded-full flex items-center justify-center hover:scale-105 hover:bg-card/80 transition-all group backdrop-blur-xl"
-          >
-            {status === "idle" && (
-              <div className="absolute inset-0 rounded-full border border-primary/20 scale-110 opacity-50 group-hover:opacity-100 transition-opacity" />
-            )}
-            <div className={`relative w-8 h-8 rounded-full flex items-center justify-center ${status !== "idle" ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(232,93,63,0.5)]" : "bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-[0_0_15px_rgba(232,93,63,0.3)] transition-all duration-300"}`}>
-              {status === "listening" && <span className="absolute -inset-1 rounded-full border border-primary animate-ping" />}
-              {status === "speaking" && <span className="absolute -inset-1 rounded-full border border-primary opacity-50 animate-pulse" />}
-              {status === "thinking" && <span className="absolute -inset-1 rounded-full border border-primary opacity-50 animate-pulse" style={{ animationDuration: '2s' }} />}
-              <Sparkles className="w-4 h-4" />
-            </div>
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* "Hey Pep" overlay — the assistant surface on authenticated app
+          screens. Suppressed on /reveal so the reveal stays a clean takeover. */}
+      {location !== "/reveal" && <HeyPepOverlay />}
     </div>
   );
 }

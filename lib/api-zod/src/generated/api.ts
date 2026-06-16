@@ -473,7 +473,10 @@ export const SendOpenaiMessageParams = zod.object({
 })
 
 export const SendOpenaiMessageBody = zod.object({
-  "content": zod.string()
+  "content": zod.string(),
+  "mode": zod.enum(['overlay']).optional().describe('Conversation surface. \"overlay\" routes the coach into Mode B (the \"Hey Pep\" dashboard overlay) and gates persistence behind an explicit confirmation.'),
+  "section": zod.string().optional().describe('The dashboard screen\/section the user is viewing, used to give the overlay coach screen-aware context.'),
+  "commit": zod.boolean().optional().describe('Overlay-only. When true, this turn is a confirmed fill: run the auth-scoped extraction\/persistence pass (and score\/roadmap recompute) for the signed-in user. Explain\/proposal turns omit it.')
 })
 
 

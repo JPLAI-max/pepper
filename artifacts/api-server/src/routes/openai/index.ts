@@ -99,6 +99,7 @@ function scheduleExtraction(conversationId: number, userId: number | null): void
 async function buildContextMessages(
   conversationId: number,
   userId: number | null,
+  opts: { overlay?: boolean; section?: string } = {},
 ) {
   const isGuest = userId == null;
   const [profile, allGoals, steps, docs, history] = await Promise.all([
@@ -126,6 +127,8 @@ async function buildContextMessages(
   const scores = computeScores(profile);
   const system = buildCoachContext(profile, allGoals, scores, steps, docs, {
     isGuest,
+    overlay: opts.overlay,
+    section: opts.section,
   });
 
   const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] =
@@ -194,7 +197,11 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
     return;
   }
 
-  const chatMessages = await buildContextMessages(id, access.userId);
+  const overlay = parsed.data.mode === "overlay";
+  const chatMessages = await buildContextMessages(id, access.userId, {
+    overlay,
+    section: parsed.data.section,
+  });
   chatMessages.push({ role: "user", content: parsed.data.content });
   await db
     .insert(messages)
@@ -239,6 +246,26 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
       content: fullResponse,
     });
   }
+
+  // Persistence policy:
+  // - Overlay (Mode B): only a confirmed fill (commit === true) writes. We run
+  //   the existing auth-scoped extraction pass AWAITED — before `done` — so the
+  //   client's post-turn query invalidation sees the recomputed scores/roadmap.
+  //   Explain/proposal turns (no commit) never touch the DB.
+  // - Non-overlay (Mode A): unchanged fire-and-forget extraction after `end`.
+  if (overlay) {
+    if (parsed.data.commit === true && access.userId != null) {
+      try {
+        await extractAndPersist(id, access.userId);
+      } catch (err) {
+        req.log.error({ err, conversationId: id }, "Overlay commit extraction failed");
+      }
+    }
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+    return;
+  }
+
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();
 

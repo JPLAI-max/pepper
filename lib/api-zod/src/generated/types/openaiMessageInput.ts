@@ -5,7 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { OpenaiMessageInputMode } from './openaiMessageInputMode';
 
 export interface OpenaiMessageInput {
   content: string;
+  /** Conversation surface. "overlay" routes the coach into Mode B (the "Hey Pep" dashboard overlay) and gates persistence behind an explicit confirmation. */
+  mode?: OpenaiMessageInputMode;
+  /** The dashboard screen/section the user is viewing, used to give the overlay coach screen-aware context. */
+  section?: string;
+  /** Overlay-only. When true, this turn is a confirmed fill: run the auth-scoped extraction/persistence pass (and score/roadmap recompute) for the signed-in user. Explain/proposal turns omit it. */
+  commit?: boolean;
 }

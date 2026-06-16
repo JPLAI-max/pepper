@@ -242,7 +242,10 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendText = useCallback(
-    async (content: string) => {
+    async (
+      content: string,
+      opts?: { mode?: "overlay"; section?: string; commit?: boolean },
+    ) => {
       const trimmed = content.trim();
       if (!trimmed || busy) return;
       const id = await ensureConversation();
@@ -257,7 +260,12 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       try {
         await streamSSE(
           `${API_BASE}/openai/conversations/${id}/messages`,
-          { content: trimmed },
+          {
+            content: trimmed,
+            ...(opts?.mode ? { mode: opts.mode } : {}),
+            ...(opts?.section != null ? { section: opts.section } : {}),
+            ...(opts?.commit != null ? { commit: opts.commit } : {}),
+          },
           (event) => {
             if (event.authRequired === true) {
               setAuthRequired(true);

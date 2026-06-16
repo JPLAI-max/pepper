@@ -136,9 +136,26 @@ function Router() {
   );
 }
 
+// Authenticated app screens where the "Hey Pep" overlay (mounted in AppLayout)
+// is the assistant surface. /reveal intentionally has no assistant.
+const APP_SHELL_ROUTES = [
+  "/dashboard",
+  "/goals",
+  "/roadmap",
+  "/readiness",
+  "/opportunities",
+  "/documents",
+  "/reveal",
+];
+
 function GlobalAssistant() {
-  // The Pepper panel is available everywhere, including the public landing,
-  // so anonymous visitors can start a conversation before signing up.
+  const { isAuthenticated } = useAuth();
+  const [location] = useLocation();
+  // On authenticated app-shell screens the Hey Pep overlay handles assistance,
+  // so the standard panel is suppressed there to avoid a duplicate orb. It
+  // remains available everywhere else (public landing, onboarding) so anonymous
+  // visitors can start a conversation before signing up.
+  if (isAuthenticated && APP_SHELL_ROUTES.includes(location)) return null;
   return <PepperAssistant />;
 }
 

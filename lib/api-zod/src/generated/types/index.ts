@@ -31,6 +31,7 @@ export * from './openaiConversation';
 export * from './openaiConversationInput';
 export * from './openaiMessage';
 export * from './openaiMessageInput';
+export * from './openaiMessageInputMode';
 export * from './openaiTranscribeInput';
 export * from './openaiTranscribeOutput';
 export * from './openaiVoiceMessageInput';
