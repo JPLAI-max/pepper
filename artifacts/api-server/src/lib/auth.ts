@@ -9,8 +9,11 @@ export async function hashPassword(plain: string): Promise<string> {
 
 export async function verifyPassword(
   plain: string,
-  hash: string,
+  hash: string | null,
 ): Promise<boolean> {
+  // Passkey-only accounts have no password hash and can never log in via the
+  // password path; treat them as a non-match without touching bcrypt.
+  if (!hash) return false;
   return bcrypt.compare(plain, hash);
 }
 

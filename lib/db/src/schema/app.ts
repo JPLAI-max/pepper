@@ -16,16 +16,39 @@ import { z } from "zod/v4";
 // + add a login screen, no table re-plumbing.
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  // Real accounts: email + bcrypt password hash. Identity is now resolved from
-  // the verified server-side session, not a singleton.
+  // Real accounts: email + optional bcrypt password hash. Identity is resolved
+  // from the verified server-side session, not a singleton. passwordHash is
+  // nullable so an account can be passkey-only (no password set); the password
+  // path stays fully supported as a fallback.
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
 });
 
 export type User = typeof users.$inferSelect;
+
+// WebAuthn passkeys bound to an owning account. The public key + signature
+// counter are stored server-side; the private key never leaves the user's
+// authenticator (platform Face ID / Touch ID / Windows Hello). credentialId is
+// the base64url credential id returned by the authenticator.
+export const credentials = pgTable("credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  credentialId: text("credential_id").notNull().unique(),
+  publicKey: text("public_key").notNull(),
+  counter: integer("counter").notNull().default(0),
+  // JSON-encoded string[] of authenticator transports (e.g. ["internal"]).
+  transports: text("transports"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type Credential = typeof credentials.$inferSelect;
 
 // Per-user financial snapshot (one row per user).
 export const profiles = pgTable("profiles", {

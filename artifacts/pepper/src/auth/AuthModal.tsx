@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -25,8 +24,14 @@ const GATE_SUBTITLE =
   "To save your roadmap and keep it private, let's set up your account.";
 
 export function AuthModalProvider({ children }: { children: ReactNode }) {
-  const { signup, login, isAuthenticated } = useAuth();
-  const { authRequired, clearAuthRequired } = usePepper();
+  const {
+    signup,
+    login,
+    registerPasskey,
+    loginWithPasskey,
+    passkeySupported,
+  } = useAuth();
+  const { clearAuthRequired } = usePepper();
   const [, setLocation] = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -50,16 +55,46 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
     setPassword("");
   }, []);
 
-  // Trust gate: the anonymous chat shared financial specifics. Surface account
-  // setup without interrupting the in-progress conversation.
-  useEffect(() => {
-    if (authRequired && !isAuthenticated && !isOpen) {
-      setMode("signup");
-      setTrigger("gate");
-      setError(null);
-      setIsOpen(true);
+  // The inline conversational TrustGate (rendered in PepperAssistant) now owns
+  // the gate experience, so this modal only ever opens manually (header button).
+
+  const handlePasskey = useCallback(async () => {
+    if (submitting) return;
+    setError(null);
+    if (mode === "signup" && !email.trim()) {
+      setError("Enter your email first.");
+      return;
     }
-  }, [authRequired, isAuthenticated, isOpen]);
+    setSubmitting(true);
+    try {
+      if (mode === "signup") {
+        await registerPasskey(email.trim());
+      } else {
+        await loginWithPasskey();
+      }
+      clearAuthRequired();
+      setIsOpen(false);
+      setPassword("");
+      if (trigger === "manual") {
+        setLocation("/dashboard");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    submitting,
+    mode,
+    email,
+    registerPasskey,
+    loginWithPasskey,
+    clearAuthRequired,
+    trigger,
+    setLocation,
+  ]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -167,6 +202,25 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
                     : "Log in"}
               </button>
             </form>
+            {passkeySupported && (
+              <>
+                <div style={dividerStyle}>
+                  <span style={dividerLineStyle} />
+                  <span style={dividerTextStyle}>or</span>
+                  <span style={dividerLineStyle} />
+                </div>
+                <button
+                  type="button"
+                  onClick={handlePasskey}
+                  disabled={submitting}
+                  style={passkeyStyle}
+                >
+                  {mode === "signup"
+                    ? "Continue with Face ID"
+                    : "Unlock with Face ID"}
+                </button>
+              </>
+            )}
             <div style={switchRowStyle}>
               {mode === "signup" ? (
                 <button
@@ -333,4 +387,34 @@ const errorStyle: React.CSSProperties = {
   color: "#ff9b7a",
   fontSize: "0.85rem",
   textAlign: "left",
+};
+
+const dividerStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  margin: "16px 0 12px",
+};
+
+const dividerLineStyle: React.CSSProperties = {
+  flex: 1,
+  height: 1,
+  background: "rgba(255, 180, 120, 0.14)",
+};
+
+const dividerTextStyle: React.CSSProperties = {
+  fontSize: "0.78rem",
+  color: "#8c7d71",
+};
+
+const passkeyStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "13px 15px",
+  borderRadius: 12,
+  border: "1px solid rgba(255, 180, 120, 0.3)",
+  cursor: "pointer",
+  fontSize: "0.95rem",
+  fontWeight: 600,
+  color: "#f6ece1",
+  background: "rgba(255, 180, 120, 0.08)",
 };

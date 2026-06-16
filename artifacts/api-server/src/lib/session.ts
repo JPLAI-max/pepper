@@ -11,6 +11,14 @@ declare module "express-session" {
   interface SessionData {
     userId?: number;
     conversationId?: number;
+    // WebAuthn: the server-generated, single-use challenge for the in-flight
+    // registration or authentication ceremony. Stored server-side (never
+    // client-trusted) and cleared as soon as it is verified.
+    currentChallenge?: string;
+    // Pending passkey registration (no account is created until the
+    // attestation is verified, so an abandoned ceremony leaves no orphan user).
+    pendingEmail?: string;
+    pendingUserHandle?: string;
   }
 }
 

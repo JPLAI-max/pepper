@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
+import passkeyRouter from "./passkey";
 import profileRouter from "./profile";
 import goalsRouter from "./goals";
 import roadmapRouter from "./roadmap";
@@ -14,6 +15,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(passkeyRouter);
 router.use(profileRouter);
 router.use(goalsRouter);
 router.use(roadmapRouter);

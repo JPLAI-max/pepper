@@ -14,6 +14,11 @@ import {
   getGetMeQueryKey,
   type AuthUser,
 } from "@workspace/api-client-react";
+import {
+  registerPasskey as passkeyRegister,
+  loginPasskey as passkeyLogin,
+  passkeySupported as isPasskeySupported,
+} from "./passkey";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -21,6 +26,9 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   signup: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  registerPasskey: (email: string) => Promise<void>;
+  loginWithPasskey: () => Promise<void>;
+  passkeySupported: boolean;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -57,6 +65,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [loginMutation, invalidateAll],
   );
 
+  const registerPasskey = useCallback(
+    async (email: string) => {
+      await passkeyRegister(email);
+      await invalidateAll();
+    },
+    [invalidateAll],
+  );
+
+  const loginWithPasskey = useCallback(async () => {
+    await passkeyLogin();
+    await invalidateAll();
+  }, [invalidateAll]);
+
   const logout = useCallback(async () => {
     await logoutMutation.mutateAsync();
     await invalidateAll();
@@ -73,10 +94,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: user != null,
       signup,
       login,
+      registerPasskey,
+      loginWithPasskey,
+      passkeySupported: isPasskeySupported(),
       logout,
       refresh,
     }),
-    [user, isLoading, signup, login, logout, refresh],
+    [
+      user,
+      isLoading,
+      signup,
+      login,
+      registerPasskey,
+      loginWithPasskey,
+      logout,
+      refresh,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

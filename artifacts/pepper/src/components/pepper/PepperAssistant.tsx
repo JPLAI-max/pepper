@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { usePepper } from "@/pepper";
+import { useAuth, TrustGate } from "@/auth";
 import { X, Mic, Send, Volume2, SquareSquare, VolumeX, MicOff, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,7 +18,9 @@ export function PepperAssistant() {
     stopSpeaking,
     wakeWordEnabled, setWakeWordEnabled, wakeWordSupported,
     reset,
+    authRequired, clearAuthRequired,
   } = usePepper();
+  const { isAuthenticated } = useAuth();
 
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -107,6 +110,18 @@ export function PepperAssistant() {
                   <span className="w-1.5 h-1.5 bg-primary/80 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                   <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
+              </div>
+            )}
+            {/* Inline trust gate: fires in-conversation the moment an anonymous
+                guest is about to share financial specifics. Real WebAuthn; the
+                conversation resumes seamlessly on success. */}
+            {authRequired && !isAuthenticated && (
+              <div className="pt-1">
+                <TrustGate
+                  variant="gate"
+                  onSuccess={clearAuthRequired}
+                  onDismiss={clearAuthRequired}
+                />
               </div>
             )}
             <div ref={scrollRef} className="h-4" />

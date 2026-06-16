@@ -21,6 +21,7 @@ import Readiness from "@/pages/Readiness";
 import Documents from "@/pages/Documents";
 import Opportunities from "@/pages/Opportunities";
 import Reveal from "@/pages/Reveal";
+import Privacy from "@/pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/onboarding">
         <ProtectedRoute component={Onboarding} path="/onboarding" />
       </Route>
