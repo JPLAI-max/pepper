@@ -44,6 +44,85 @@ export interface RequestUploadUrlOutput {
   metadata: RequestUploadUrlInput;
 }
 
+export interface IngestDocumentInput {
+  /** Normalized /objects/... path returned by request-url */
+  objectPath: string;
+  name: string;
+  contentType: string;
+  size: number;
+}
+
+export type ProposedFieldKey = typeof ProposedFieldKey[keyof typeof ProposedFieldKey];
+
+
+export const ProposedFieldKey = {
+  monthlyIncome: 'monthlyIncome',
+  monthlyExpenses: 'monthlyExpenses',
+  cashSavings: 'cashSavings',
+  otherAssets: 'otherAssets',
+  totalDebt: 'totalDebt',
+  creditScore: 'creditScore',
+} as const;
+
+/**
+ * One profile value Pepper read from the document, for review.
+ */
+export interface ProposedField {
+  key: ProposedFieldKey;
+  label: string;
+  value: number;
+}
+
+export interface IngestDocumentOutput {
+  documentId: number;
+  /** Classified type (w2, pay_stub, bank_statement, tax_return, credit_report, property_doc, other) */
+  docType: string;
+  docTypeLabel: string;
+  fields: ProposedField[];
+  /** Friendly note when no clear values could be read */
+  message?: string;
+}
+
+/**
+ * User-confirmed (possibly edited) values to write onto the profile.
+ */
+export interface ConfirmDocumentExtractionInput {
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  monthlyIncome?: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  monthlyExpenses?: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  cashSavings?: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  otherAssets?: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  totalDebt?: number;
+  /**
+     * @minimum 0
+     * @maximum 850
+     */
+  creditScore?: number;
+}
+
+export interface ConfirmDocumentExtractionOutput {
+  updatedFields: string[];
+}
+
 export interface Profile {
   id: number;
   userId: number;

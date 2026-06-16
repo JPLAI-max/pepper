@@ -1,0 +1,20 @@
+→ REPLIT (build)
+
+Sync first: git fetch origin && git reset --hard origin/main.
+
+Build — Document upload + parsing. Drag-and-drop financial documents into the conversation; Pepper reads them, proposes the values, and writes them only on confirmation. This handles sensitive financial PII — private storage and owner-scoping are non-negotiable.
+
+PART 1 — Mount the hardened storage layer.
+- Mount routes/storage.ts in routes/index.ts. Confirm its existing ACL is active: requireAuth on the upload request-url route, and the object-serve route returns 401 without a session and 403 unless canAccessObjectEntity passes for the owner. Files go to the PRIVATE bucket/scope ONLY — a financial document must never be publicly reachable.
+
+PART 2 — Upload in the conversation.
+- Wire the existing conversation upload affordance so a logged-in user can drag-drop or pick a file (PDF, PNG, JPG only). Validate type AND size server-side (reject anything else; cap at ~15MB). Store the file in private object storage scoped to the session user, and create a documents row (already userId-scoped) with the storage key + category. requireAuth — anonymous users cannot upload (consistent with the trust gate).
+
+PART 3 — Parse + extract (server-side).
+- Server-side, send the document to OpenAI (vision/document) to (a) classify the type — W2, pay stub, bank statement, tax return, credit report, property doc — and (b) extract only the financial fields actually present. OpenAI key server-side only. Reuse the extraction guardrail: NEVER invent or estimate a number; anything not in the document stays null.
+- Return the proposed values as a confirmation card. Match the existing ember card styling and the Hey Pep overlay's confirm-before-commit pattern: "I read your W2 — here's what I found," with the values editable before confirming.
+
+PART 4 — Confirm + persist.
+- Only on explicit user confirmation, write the values through the EXISTING auth-scoped extraction/persistence path (own rows, validated, no fabricated values), then fire the existing score/roadmap recompute. Edited or unconfirmed values are never written.
+
+Do NOT build anything beyond upload, parse, confirm, and persist. Do not expose the OpenAI key client-side. Do not weaken the storage ACL.

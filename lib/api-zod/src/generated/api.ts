@@ -327,6 +327,66 @@ export const DeleteDocumentParams = zod.object({
 
 
 /**
+ * @summary Finalize an uploaded financial document (validate, lock to the owner, file it) and parse it server-side into proposed profile values for the user to confirm. Authenticated users only.
+ */
+export const IngestDocumentBody = zod.object({
+  "objectPath": zod.string().describe('Normalized \/objects\/... path returned by request-url'),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number()
+})
+
+export const IngestDocumentResponse = zod.object({
+  "documentId": zod.number(),
+  "docType": zod.string().describe('Classified type (w2, pay_stub, bank_statement, tax_return, credit_report, property_doc, other)'),
+  "docTypeLabel": zod.string(),
+  "fields": zod.array(zod.object({
+  "key": zod.enum(['monthlyIncome', 'monthlyExpenses', 'cashSavings', 'otherAssets', 'totalDebt', 'creditScore']),
+  "label": zod.string(),
+  "value": zod.number()
+}).describe('One profile value Pepper read from the document, for review.')),
+  "message": zod.string().optional().describe('Friendly note when no clear values could be read')
+})
+
+
+/**
+ * @summary Persist the user-confirmed (and possibly edited) values parsed from a document onto their own profile, then recompute scores and roadmap. Only confirmed values are ever written. Authenticated users only.
+ */
+export const confirmDocumentExtractionBodyMonthlyIncomeMin = 0;
+export const confirmDocumentExtractionBodyMonthlyIncomeMax = 100000000;
+
+export const confirmDocumentExtractionBodyMonthlyExpensesMin = 0;
+export const confirmDocumentExtractionBodyMonthlyExpensesMax = 100000000;
+
+export const confirmDocumentExtractionBodyCashSavingsMin = 0;
+export const confirmDocumentExtractionBodyCashSavingsMax = 1000000000;
+
+export const confirmDocumentExtractionBodyOtherAssetsMin = 0;
+export const confirmDocumentExtractionBodyOtherAssetsMax = 1000000000;
+
+export const confirmDocumentExtractionBodyTotalDebtMin = 0;
+export const confirmDocumentExtractionBodyTotalDebtMax = 1000000000;
+
+export const confirmDocumentExtractionBodyCreditScoreMin = 0;
+export const confirmDocumentExtractionBodyCreditScoreMax = 850;
+
+
+
+export const ConfirmDocumentExtractionBody = zod.object({
+  "monthlyIncome": zod.number().min(confirmDocumentExtractionBodyMonthlyIncomeMin).max(confirmDocumentExtractionBodyMonthlyIncomeMax).optional(),
+  "monthlyExpenses": zod.number().min(confirmDocumentExtractionBodyMonthlyExpensesMin).max(confirmDocumentExtractionBodyMonthlyExpensesMax).optional(),
+  "cashSavings": zod.number().min(confirmDocumentExtractionBodyCashSavingsMin).max(confirmDocumentExtractionBodyCashSavingsMax).optional(),
+  "otherAssets": zod.number().min(confirmDocumentExtractionBodyOtherAssetsMin).max(confirmDocumentExtractionBodyOtherAssetsMax).optional(),
+  "totalDebt": zod.number().min(confirmDocumentExtractionBodyTotalDebtMin).max(confirmDocumentExtractionBodyTotalDebtMax).optional(),
+  "creditScore": zod.number().min(confirmDocumentExtractionBodyCreditScoreMin).max(confirmDocumentExtractionBodyCreditScoreMax).optional()
+}).describe('User-confirmed (possibly edited) values to write onto the profile.')
+
+export const ConfirmDocumentExtractionResponse = zod.object({
+  "updatedFields": zod.array(zod.string())
+})
+
+
+/**
  * @summary List lending and investment opportunities
  */
 export const ListOpportunitiesResponseItem = zod.object({

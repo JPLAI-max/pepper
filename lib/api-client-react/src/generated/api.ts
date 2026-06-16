@@ -23,6 +23,8 @@ import type {
   AuthCredentials,
   AuthSession,
   AuthState,
+  ConfirmDocumentExtractionInput,
+  ConfirmDocumentExtractionOutput,
   DashboardSummary,
   Document,
   DocumentInput,
@@ -32,6 +34,8 @@ import type {
   GoalInput,
   GoalUpdate,
   HealthStatus,
+  IngestDocumentInput,
+  IngestDocumentOutput,
   OpenaiConversation,
   OpenaiConversationInput,
   OpenaiMessage,
@@ -1305,6 +1309,148 @@ export const useDeleteDocument = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getDeleteDocumentMutationOptions(options));
+    }
+
+export const getIngestDocumentUrl = () => {
+
+
+
+
+  return `/api/documents/ingest`
+}
+
+/**
+ * @summary Finalize an uploaded financial document (validate, lock to the owner, file it) and parse it server-side into proposed profile values for the user to confirm. Authenticated users only.
+ */
+export const ingestDocument = async (ingestDocumentInput: IngestDocumentInput, options?: RequestInit): Promise<IngestDocumentOutput> => {
+
+  return customFetch<IngestDocumentOutput>(getIngestDocumentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      ingestDocumentInput,)
+  }
+);}
+
+
+
+
+export const getIngestDocumentMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestDocument>>, TError,{data: BodyType<IngestDocumentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestDocument>>, TError,{data: BodyType<IngestDocumentInput>}, TContext> => {
+
+const mutationKey = ['ingestDocument'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestDocument>>, {data: BodyType<IngestDocumentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestDocument(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof ingestDocument>>>
+    export type IngestDocumentMutationBody = BodyType<IngestDocumentInput>
+    export type IngestDocumentMutationError = ErrorType<Error>
+
+    /**
+ * @summary Finalize an uploaded financial document (validate, lock to the owner, file it) and parse it server-side into proposed profile values for the user to confirm. Authenticated users only.
+ */
+export const useIngestDocument = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestDocument>>, TError,{data: BodyType<IngestDocumentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestDocument>>,
+        TError,
+        {data: BodyType<IngestDocumentInput>},
+        TContext
+      > => {
+      return useMutation(getIngestDocumentMutationOptions(options));
+    }
+
+export const getConfirmDocumentExtractionUrl = () => {
+
+
+
+
+  return `/api/documents/confirm-extraction`
+}
+
+/**
+ * @summary Persist the user-confirmed (and possibly edited) values parsed from a document onto their own profile, then recompute scores and roadmap. Only confirmed values are ever written. Authenticated users only.
+ */
+export const confirmDocumentExtraction = async (confirmDocumentExtractionInput: ConfirmDocumentExtractionInput, options?: RequestInit): Promise<ConfirmDocumentExtractionOutput> => {
+
+  return customFetch<ConfirmDocumentExtractionOutput>(getConfirmDocumentExtractionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      confirmDocumentExtractionInput,)
+  }
+);}
+
+
+
+
+export const getConfirmDocumentExtractionMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmDocumentExtraction>>, TError,{data: BodyType<ConfirmDocumentExtractionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmDocumentExtraction>>, TError,{data: BodyType<ConfirmDocumentExtractionInput>}, TContext> => {
+
+const mutationKey = ['confirmDocumentExtraction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmDocumentExtraction>>, {data: BodyType<ConfirmDocumentExtractionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmDocumentExtraction(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmDocumentExtractionMutationResult = NonNullable<Awaited<ReturnType<typeof confirmDocumentExtraction>>>
+    export type ConfirmDocumentExtractionMutationBody = BodyType<ConfirmDocumentExtractionInput>
+    export type ConfirmDocumentExtractionMutationError = ErrorType<Error>
+
+    /**
+ * @summary Persist the user-confirmed (and possibly edited) values parsed from a document onto their own profile, then recompute scores and roadmap. Only confirmed values are ever written. Authenticated users only.
+ */
+export const useConfirmDocumentExtraction = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmDocumentExtraction>>, TError,{data: BodyType<ConfirmDocumentExtractionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmDocumentExtraction>>,
+        TError,
+        {data: BodyType<ConfirmDocumentExtractionInput>},
+        TContext
+      > => {
+      return useMutation(getConfirmDocumentExtractionMutationOptions(options));
     }
 
 export const getListOpportunitiesUrl = () => {

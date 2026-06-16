@@ -358,6 +358,74 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /documents/ingest:
+    post:
+      operationId: ingestDocument
+      tags: [documents]
+      summary: >-
+        Finalize an uploaded financial document (validate, lock to the owner,
+        file it) and parse it server-side into proposed profile values for the
+        user to confirm. Authenticated users only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestDocumentInput"
+      responses:
+        "200":
+          description: Document filed and parsed into proposed values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestDocumentOutput"
+        "400":
+          description: Invalid file (type/size) or missing object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /documents/confirm-extraction:
+    post:
+      operationId: confirmDocumentExtraction
+      tags: [documents]
+      summary: >-
+        Persist the user-confirmed (and possibly edited) values parsed from a
+        document onto their own profile, then recompute scores and roadmap.
+        Only confirmed values are ever written. Authenticated users only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmDocumentExtractionInput"
+      responses:
+        "200":
+          description: Values persisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmDocumentExtractionOutput"
+        "400":
+          description: Invalid values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /opportunities:
     get:
       operationId: listOpportunities
@@ -612,6 +680,104 @@ components:
         - uploadURL
         - objectPath
         - metadata
+
+    IngestDocumentInput:
+      type: object
+      properties:
+        objectPath:
+          type: string
+          description: Normalized /objects/... path returned by request-url
+        name:
+          type: string
+        contentType:
+          type: string
+        size:
+          type: integer
+      required:
+        - objectPath
+        - name
+        - contentType
+        - size
+    ProposedField:
+      type: object
+      description: One profile value Pepper read from the document, for review.
+      properties:
+        key:
+          type: string
+          enum:
+            - monthlyIncome
+            - monthlyExpenses
+            - cashSavings
+            - otherAssets
+            - totalDebt
+            - creditScore
+        label:
+          type: string
+        value:
+          type: integer
+      required:
+        - key
+        - label
+        - value
+    IngestDocumentOutput:
+      type: object
+      properties:
+        documentId:
+          type: integer
+        docType:
+          type: string
+          description: Classified type (w2, pay_stub, bank_statement, tax_return, credit_report, property_doc, other)
+        docTypeLabel:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProposedField"
+        message:
+          type: string
+          description: Friendly note when no clear values could be read
+      required:
+        - documentId
+        - docType
+        - docTypeLabel
+        - fields
+    ConfirmDocumentExtractionInput:
+      type: object
+      description: User-confirmed (possibly edited) values to write onto the profile.
+      properties:
+        monthlyIncome:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+        monthlyExpenses:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+        cashSavings:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        otherAssets:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        totalDebt:
+          type: integer
+          minimum: 0
+          maximum: 1000000000
+        creditScore:
+          type: integer
+          minimum: 0
+          maximum: 850
+    ConfirmDocumentExtractionOutput:
+      type: object
+      properties:
+        updatedFields:
+          type: array
+          items:
+            type: string
+      required:
+        - updatedFields
 
     Profile:
       type: object

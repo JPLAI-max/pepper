@@ -36,44 +36,54 @@ Shape:
 const num = z.number().nullable().optional();
 const str = z.string().nullable().optional();
 
+/**
+ * The financial-facts portion of an extraction. Shared by the conversation
+ * extraction pass AND the document parser so both map onto the profile through
+ * the exact same path. Every field is optional/nullable: a value the source
+ * never stated stays null and is never invented.
+ */
+export const ExtractedFinancials = z
+  .object({
+    goal: z
+      .object({
+        type: str,
+        is_primary: z.boolean().nullable().optional(),
+        timeline: str,
+        motivation: str,
+      })
+      .partial()
+      .optional(),
+    income: z
+      .object({ annual: num, monthly: num, employment_type: str })
+      .partial()
+      .optional(),
+    assets: z
+      .object({ cash: num, savings: num, retirement: num })
+      .partial()
+      .optional(),
+    debt: z
+      .object({ credit_cards: num, auto: num, student: num, personal: num })
+      .partial()
+      .optional(),
+    credit: z.object({ score_estimate: num }).partial().optional(),
+    spending: z
+      .object({
+        housing: num,
+        transportation: num,
+        dining: num,
+        subscriptions: num,
+      })
+      .partial()
+      .optional(),
+    properties: z.array(z.unknown()).optional(),
+  })
+  .partial()
+  .optional();
+
+export type ExtractedFinancials = z.infer<typeof ExtractedFinancials>;
+
 const ExtractionResult = z.object({
-  extracted: z
-    .object({
-      goal: z
-        .object({
-          type: str,
-          is_primary: z.boolean().nullable().optional(),
-          timeline: str,
-          motivation: str,
-        })
-        .partial()
-        .optional(),
-      income: z
-        .object({ annual: num, monthly: num, employment_type: str })
-        .partial()
-        .optional(),
-      assets: z
-        .object({ cash: num, savings: num, retirement: num })
-        .partial()
-        .optional(),
-      debt: z
-        .object({ credit_cards: num, auto: num, student: num, personal: num })
-        .partial()
-        .optional(),
-      credit: z.object({ score_estimate: num }).partial().optional(),
-      spending: z
-        .object({
-          housing: num,
-          transportation: num,
-          dining: num,
-          subscriptions: num,
-        })
-        .partial()
-        .optional(),
-      properties: z.array(z.unknown()).optional(),
-    })
-    .partial()
-    .optional(),
+  extracted: ExtractedFinancials,
   ready_for_reveal: z.boolean().optional().default(false),
   next_action: z.string().optional().default(""),
 });
@@ -97,13 +107,23 @@ const nonNeg = (n: number) => Math.max(0, Math.round(n));
  * sum of the categories the user has stated — derived arithmetic, never
  * invented numbers.
  */
-function mapToProfileFields(e: ExtractionResult["extracted"]): Partial<Profile> {
+export function mapToProfileFields(
+  e: ExtractedFinancials,
+  opts?: { deriveMonthlyFromAnnual?: boolean },
+): Partial<Profile> {
   const updates: Partial<Profile> = {};
   if (!e) return updates;
 
+  // Conversation extraction may derive a monthly figure from a stated annual
+  // one (a number the user would expect). The document flow disables this:
+  // documents must surface ONLY values literally printed on the page — deriving
+  // monthly from an annual W-2 figure would be annualizing, which is forbidden.
+  const allowAnnualDerive = opts?.deriveMonthlyFromAnnual !== false;
   const monthlyIncome =
     e.income?.monthly ??
-    (e.income?.annual != null ? e.income.annual / 12 : undefined);
+    (allowAnnualDerive && e.income?.annual != null
+      ? e.income.annual / 12
+      : undefined);
   if (typeof monthlyIncome === "number" && Number.isFinite(monthlyIncome)) {
     updates.monthlyIncome = nonNeg(monthlyIncome);
   }
@@ -212,22 +232,57 @@ export async function extractAndPersist(
 
   const mapped = mapToProfileFields(result.extracted);
 
-  // Build the set of changed values (numeric profile fields + the two flags).
+  await persistProfileFields(userId, mapped, {
+    nextAction: result.next_action || undefined,
+    readyForReveal: result.ready_for_reveal,
+    source: `extraction:conversation:${conversationId}`,
+  });
+}
+
+const NUMERIC_PROFILE_FIELDS = [
+  "monthlyIncome",
+  "monthlyExpenses",
+  "cashSavings",
+  "otherAssets",
+  "totalDebt",
+  "creditScore",
+] as const;
+
+/**
+ * Persist a set of profile field updates onto the user's OWN profile, append a
+ * profile_history row for every value that actually changed, then recompute the
+ * readiness scores and roadmap. This is THE shared, auth-scoped persistence
+ * path: both the silent conversation extraction pass and the confirmed
+ * document-extraction flow write through here, so neither can fabricate values
+ * or skip the downstream recompute. Only finite numeric values are applied;
+ * undefined fields are left untouched. Returns the names of fields that changed.
+ */
+export async function persistProfileFields(
+  userId: number,
+  mapped: Partial<Profile>,
+  extras?: {
+    nextAction?: string;
+    readyForReveal?: boolean;
+    source?: string;
+  },
+): Promise<string[]> {
+  const current = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+    .limit(1);
+  const profile = current[0];
+  if (!profile) {
+    logger.warn({ userId }, "persistProfileFields: no profile for user, skipping");
+    return [];
+  }
+
   const updates: Partial<Profile> = {};
   const changes: { field: string; previous: string | null; next: string }[] = [];
 
-  const numericFields = [
-    "monthlyIncome",
-    "monthlyExpenses",
-    "cashSavings",
-    "otherAssets",
-    "totalDebt",
-    "creditScore",
-  ] as const;
-
-  for (const field of numericFields) {
+  for (const field of NUMERIC_PROFILE_FIELDS) {
     const next = mapped[field];
-    if (typeof next !== "number") continue;
+    if (typeof next !== "number" || !Number.isFinite(next)) continue;
     const prev = profile[field];
     if (next !== prev) {
       (updates[field] as number) = next;
@@ -235,18 +290,18 @@ export async function extractAndPersist(
     }
   }
 
-  // next_action: store when present.
-  if (result.next_action && result.next_action !== profile.nextAction) {
-    updates.nextAction = result.next_action;
+  // next_action: store when present and changed.
+  if (extras?.nextAction && extras.nextAction !== profile.nextAction) {
+    updates.nextAction = extras.nextAction;
     changes.push({
       field: "nextAction",
       previous: profile.nextAction ?? null,
-      next: result.next_action,
+      next: extras.nextAction,
     });
   }
 
   // ready_for_reveal: sticky once true, so a later turn can't regress it.
-  const nextReveal = profile.readyForReveal || result.ready_for_reveal;
+  const nextReveal = profile.readyForReveal || extras?.readyForReveal === true;
   if (nextReveal !== profile.readyForReveal) {
     updates.readyForReveal = nextReveal;
     changes.push({
@@ -256,7 +311,7 @@ export async function extractAndPersist(
     });
   }
 
-  if (changes.length === 0) return;
+  if (changes.length === 0) return [];
 
   await db
     .update(profiles)
@@ -273,22 +328,24 @@ export async function extractAndPersist(
   );
 
   logger.info(
-    { userId, conversationId, changed: changes.map((c) => c.field) },
-    "Extraction persisted profile changes",
+    { userId, source: extras?.source, changed: changes.map((c) => c.field) },
+    "Persisted profile changes",
   );
 
   // Profile data changed → recompute readiness scores, then regenerate the
   // roadmap from the fresh scores. Each owns its errors so a failure here never
-  // breaks the (fire-and-forget) extraction pass.
+  // breaks the caller.
   try {
     await persistReadinessScores(userId);
   } catch (err) {
-    logger.warn({ userId, err }, "Score recompute after extraction failed");
+    logger.warn({ userId, err }, "Score recompute after persist failed");
   }
 
   try {
     await persistRoadmap(userId);
   } catch (err) {
-    logger.warn({ userId, err }, "Roadmap regenerate after extraction failed");
+    logger.warn({ userId, err }, "Roadmap regenerate after persist failed");
   }
+
+  return changes.map((c) => c.field);
 }
