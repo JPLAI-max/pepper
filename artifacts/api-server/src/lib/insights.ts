@@ -157,6 +157,19 @@ export const GUEST_PROFILE: Profile = {
   updatedAt: new Date(),
 };
 
+// Known overlay screens. The client-supplied `section` is interpolated into the
+// system prompt, so it is restricted to this allowlist before it ever reaches
+// the prompt — any other value falls back to a generic default. Never
+// interpolate raw client text into the prompt, even within the user's own session.
+const ALLOWED_SECTIONS = new Set([
+  "dashboard",
+  "goals",
+  "roadmap",
+  "readiness",
+  "documents",
+  "opportunities",
+]);
+
 export function buildCoachContext(
   p: Profile,
   goals: Goal[],
@@ -205,9 +218,12 @@ Keep replies concise and conversational — 2-4 short sentences unless asked for
 
   const docsComplete = docs.filter((d) => d.status === "complete").length;
 
+  const safeSection =
+    opts.section && ALLOWED_SECTIONS.has(opts.section) ? opts.section : null;
+
   const overlayBlock = opts.overlay
     ? `\n\n# ACTIVE SURFACE — "HEY PEP" DASHBOARD OVERLAY
-You are in Mode B, invoked from ${opts.section ? `the ${opts.section} screen` : "the dashboard"}. Keep replies to 1-2 short sentences — the user is mid-task. If they ask what something means, explain THIS screen plainly in your own voice; do not change anything. If they state a number to set (income, monthly expenses, savings, debt, or credit), restate it and ask them to confirm before it counts as saved — never assume it is set until they say yes. Never invent numbers.`
+You are in Mode B, invoked from ${safeSection ? `the ${safeSection} screen` : "the dashboard"}. Keep replies to 1-2 short sentences — the user is mid-task. If they ask what something means, explain THIS screen plainly in your own voice; do not change anything. If they state a number to set (income, monthly expenses, savings, debt, or credit), restate it and ask them to confirm before it counts as saved — never assume it is set until they say yes. Never invent numbers.`
     : "";
 
   return `# IDENTITY

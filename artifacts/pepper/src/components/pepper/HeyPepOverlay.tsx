@@ -39,6 +39,7 @@ type ThemeTokens = {
   "--surface": string;
   "--card": string;
   "--accent": string;
+  "--accent-foreground": string;
   "--ink": string;
   "--muted": string;
   "--line": string;
@@ -59,6 +60,7 @@ const THEMES: Record<string, ThemeTokens> = {
     "--surface": "#171210",
     "--card": "rgba(28,21,17,.65)",
     "--accent": "#ff7e3f",
+    "--accent-foreground": "#ffffff",
     "--ink": "#f6ece1",
     "--muted": "#a8978a",
     "--line": "rgba(255,180,120,.14)",
@@ -75,6 +77,7 @@ const THEMES: Record<string, ThemeTokens> = {
     "--surface": "#ffffff",
     "--card": "#ffffff",
     "--accent": "#6f8f6a",
+    "--accent-foreground": "#ffffff",
     "--ink": "#23291f",
     "--muted": "#6b7363",
     "--line": "rgba(80,110,70,.16)",
@@ -91,6 +94,7 @@ const THEMES: Record<string, ThemeTokens> = {
     "--surface": "#ffffff",
     "--card": "#ffffff",
     "--accent": "#3b7ea1",
+    "--accent-foreground": "#ffffff",
     "--ink": "#1b2733",
     "--muted": "#5a6b78",
     "--line": "rgba(60,110,150,.16)",
@@ -107,6 +111,7 @@ const THEMES: Record<string, ThemeTokens> = {
     "--surface": "#ffffff",
     "--card": "#ffffff",
     "--accent": "#c25e7e",
+    "--accent-foreground": "#ffffff",
     "--ink": "#2c1f25",
     "--muted": "#7a6670",
     "--line": "rgba(180,90,120,.16)",
@@ -149,8 +154,8 @@ const OVERLAY_CSS = `
 .heypep .inbar{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px}
 .heypep .ic{flex:none;width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center}
 .heypep .ic.mic{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
-.heypep .ic.mic.on{background:var(--accent);color:#fff}
-.heypep .ic.send{background:var(--accent);color:#fff}
+.heypep .ic.mic.on{background:var(--accent);color:var(--accent-foreground)}
+.heypep .ic.send{background:var(--accent);color:var(--accent-foreground)}
 .heypep .inbar input{flex:1;background:none;border:none;outline:none;color:var(--ink);font-size:1rem;padding:0 4px}
 .heypep .inbar input::placeholder{color:var(--muted)}
 @media(min-width:600px){.heypep .panel{bottom:24px;border-radius:24px;border-bottom:1px solid var(--line)}.heypep.open .panel{transform:translate(-50%,0)}}
@@ -172,13 +177,15 @@ const SendIcon = () => (
   </svg>
 );
 
-const SECTION_LABELS: Record<string, string> = {
-  "/dashboard": "Command Center",
-  "/goals": "Goals",
-  "/roadmap": "Roadmap",
-  "/readiness": "Readiness",
-  "/opportunities": "Opportunities",
-  "/documents": "Documents",
+// Canonical screen names — must match the server-side `ALLOWED_SECTIONS`
+// allowlist. Anything off this map sends no section and the server defaults.
+const SECTION_BY_ROUTE: Record<string, string> = {
+  "/dashboard": "dashboard",
+  "/goals": "goals",
+  "/roadmap": "roadmap",
+  "/readiness": "readiness",
+  "/opportunities": "opportunities",
+  "/documents": "documents",
 };
 
 const AFFIRMATIVE =
@@ -215,7 +222,7 @@ export function HeyPepOverlay() {
   // True once the user has proposed a value the coach is asking them to confirm.
   const pendingFillRef = useRef(false);
 
-  const section = SECTION_LABELS[location] ?? "the dashboard";
+  const section = SECTION_BY_ROUTE[location];
 
   // Apply the (ember) theme tokens onto the overlay root. THEMES is kept whole
   // so the palette can be swapped later without touching markup or CSS.
