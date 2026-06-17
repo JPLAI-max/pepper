@@ -32,7 +32,7 @@ export interface PepperContextValue {
   sendText: (
     content: string,
     opts?: { mode?: "overlay"; section?: string; commit?: boolean },
-  ) => Promise<void>;
+  ) => Promise<{ navigate?: string }>;
 
   /** Voice conversation: start/stop a spoken turn (records, transcribes, replies, speaks). */
   startListening: () => Promise<void>;

@@ -214,7 +214,7 @@ export function HeyPepOverlay() {
     dictating,
   } = usePepper();
 
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const rootRef = useRef<HTMLDivElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
@@ -256,7 +256,16 @@ export function HeyPepOverlay() {
     // Confirm-before-commit: only a "yes" to a pending value proposal commits.
     const commit = pendingFillRef.current && affirmative;
 
-    await sendText(t, { mode: "overlay", section, commit });
+    const result = await sendText(t, { mode: "overlay", section, commit });
+
+    // Pepper resolved an allowlisted navigation for this turn (validated
+    // server-side). Its confirming reply has already streamed in; route there
+    // and close the overlay. Works for both typed input and mic dictation,
+    // since both arrive here through handle().
+    if (result.navigate) {
+      setLocation(result.navigate);
+      setOpen(false);
+    }
 
     if (commit) {
       pendingFillRef.current = false;

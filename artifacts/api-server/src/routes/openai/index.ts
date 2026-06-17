@@ -28,6 +28,7 @@ import {
 import { getOrCreateProfile } from "../../lib/identity";
 import { getSessionUserId } from "../../lib/auth";
 import { extractAndPersist } from "../../lib/extraction";
+import { classifyNavigation } from "../../lib/navigation";
 import { logger } from "../../lib/logger";
 
 const router: IRouter = Router();
@@ -99,7 +100,7 @@ function scheduleExtraction(conversationId: number, userId: number | null): void
 async function buildContextMessages(
   conversationId: number,
   userId: number | null,
-  opts: { overlay?: boolean; section?: string } = {},
+  opts: { overlay?: boolean; section?: string; navigateTo?: string } = {},
 ) {
   const isGuest = userId == null;
   const [profile, allGoals, steps, docs, history] = await Promise.all([
@@ -129,6 +130,7 @@ async function buildContextMessages(
     isGuest,
     overlay: opts.overlay,
     section: opts.section,
+    navigateTo: opts.navigateTo,
   });
 
   const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] =
@@ -198,9 +200,18 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
   }
 
   const overlay = parsed.data.mode === "overlay";
+  // Overlay (Mode B) may resolve a spoken/typed request like "take me to the
+  // trading desk" into an allowlisted in-app route. Resolving it before we build
+  // the coach context lets Pepper acknowledge the navigation by name. The
+  // allowlist is enforced server-side (see lib/navigation) — never an arbitrary
+  // path or external URL.
+  const navigateTo = overlay
+    ? await classifyNavigation(parsed.data.content)
+    : null;
   const chatMessages = await buildContextMessages(id, access.userId, {
     overlay,
     section: parsed.data.section,
+    navigateTo: navigateTo ?? undefined,
   });
   chatMessages.push({ role: "user", content: parsed.data.content });
   await db
@@ -260,6 +271,9 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
       } catch (err) {
         req.log.error({ err, conversationId: id }, "Overlay commit extraction failed");
       }
+    }
+    if (navigateTo) {
+      res.write(`data: ${JSON.stringify({ navigate: navigateTo })}\n\n`);
     }
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();

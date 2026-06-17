@@ -1,4 +1,5 @@
 import type { Profile, Goal, RoadmapStep, Document } from "@workspace/db";
+import { isAllowedRoute, NAV_LABELS } from "./navigation";
 
 export interface ReadinessScore {
   key: string;
@@ -178,7 +179,12 @@ export function buildCoachContext(
   scores: ReadinessScore[],
   steps: RoadmapStep[],
   docs: Document[],
-  opts: { isGuest?: boolean; overlay?: boolean; section?: string } = {},
+  opts: {
+    isGuest?: boolean;
+    overlay?: boolean;
+    section?: string;
+    navigateTo?: string;
+  } = {},
 ): string {
   const guestFraming = opts.isGuest
     ? `\n# GUEST MODE (not signed in)
@@ -223,9 +229,22 @@ Keep replies concise and conversational — 2-4 short sentences unless asked for
   const safeSection =
     opts.section && ALLOWED_SECTIONS.has(opts.section) ? opts.section : null;
 
+  // First name for a personal, signed-in-aware greeting (Mode B). Session-
+  // derived: `p.displayName` is the authenticated profile name, never a client
+  // value. "Friend" is the unset default, so skip it.
+  const firstName =
+    !opts.isGuest && p.displayName && p.displayName.trim() !== "Friend"
+      ? p.displayName.trim().split(/\s+/)[0]
+      : null;
+
+  // Navigation target resolved + allowlisted server-side for this turn.
+  const navRoute =
+    opts.navigateTo && isAllowedRoute(opts.navigateTo) ? opts.navigateTo : null;
+  const navLabel = navRoute ? NAV_LABELS[navRoute] : null;
+
   const overlayBlock = opts.overlay
     ? `\n\n# ACTIVE SURFACE — "HEY PEP" DASHBOARD OVERLAY
-You are in Mode B, invoked from ${safeSection ? `the ${safeSection} screen` : "the dashboard"}. Keep replies to 1-2 short sentences — the user is mid-task. If they ask what something means, explain THIS screen plainly in your own voice; do not change anything. If they state a number to set (income, monthly expenses, savings, debt, or credit), restate it and ask them to confirm before it counts as saved — never assume it is set until they say yes. Never invent numbers.`
+You are in Mode B, invoked from ${safeSection ? `the ${safeSection} screen` : "the dashboard"}. Keep replies to 1-2 short sentences — the user is mid-task.${firstName ? ` The user is signed in as ${firstName}; address them by their first name and you may warmly acknowledge they're already signed in.` : ""} If they ask what something means, explain THIS screen plainly in your own voice; do not change anything. If they state a number to set (income, monthly expenses, savings, debt, or credit), restate it and ask them to confirm before it counts as saved — never assume it is set until they say yes. Never invent numbers.${navLabel ? `\n\nNAVIGATION: The user asked to be taken to ${navLabel}, and you ARE taking them there right now — the app navigates automatically as you reply. Respond with a single warm sentence confirming it${firstName ? `, addressing them as ${firstName}` : ""} (e.g. "Of course${firstName ? `, ${firstName}` : ""} — taking you to ${navLabel} now."). Do not ask them to click anything and do not describe the destination at length.` : ""}`
     : "";
 
   return `# IDENTITY

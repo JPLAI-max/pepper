@@ -253,7 +253,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       opts?: { mode?: "overlay"; section?: string; commit?: boolean },
     ) => {
       const trimmed = content.trim();
-      if (!trimmed || busy) return;
+      if (!trimmed || busy) return {};
       const id = await ensureConversation();
       const userMsg: PepperMessage = { id: uid(), role: "user", content: trimmed };
       const assistantId = uid();
@@ -263,6 +263,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         { id: assistantId, role: "assistant", content: "" },
       ]);
       setStatus("thinking");
+      let navigate: string | undefined;
       try {
         await streamSSE(
           `${API_BASE}/openai/conversations/${id}/messages`,
@@ -275,6 +276,10 @@ export function PepperProvider({ children }: { children: ReactNode }) {
           (event) => {
             if (event.authRequired === true) {
               setAuthRequired(true);
+            }
+            // Allowlisted, server-resolved navigation target (Mode B overlay).
+            if (typeof event.navigate === "string") {
+              navigate = event.navigate;
             }
             if (typeof event.content === "string") {
               setMessages((prev) =>
@@ -314,6 +319,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         void queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetOpportunityMatchesQueryKey() });
       }
+      return { navigate };
     },
     [busy, ensureConversation, queryClient],
   );
