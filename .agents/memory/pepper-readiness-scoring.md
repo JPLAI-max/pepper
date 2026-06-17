@@ -10,17 +10,21 @@ Deterministic, educational scoring engine lives in `artifacts/api-server/src/lib
 investing, passive_income, wealth. Each is a weighted average over **present components only**,
 weights renormalized, `partial=true` when any component is excluded.
 
-## "0 means unfilled / unknown" — the core rule
-**Rule:** In the profile, `0` is the unfilled default for every money/credit field, so it is
-treated as *unknown*, NOT a real value. A component whose inputs are 0/absent must be EXCLUDED
-and the score marked `partial` — never compute it with the zero.
-**Why:** A code review caught that DTI was being marked present on `monthlyIncome > 0` alone, so
-an unfilled `totalDebt` (0) masqueraded as perfect debt health and inflated debt/homeownership/
-investing/wealth. The "never invent data" requirement forbids this.
-**How to apply:** Presence flags gate every component (`hasIncome/hasDebt/hasSavings/hasAssets/
-hasCredit/hasExpenses`, each `field > 0`). DTI requires `hasIncome && hasDebt`. If you ever add a
-field where 0 is a legitimate value, you must add an explicit known/unknown flag rather than
-relying on `> 0`.
+## Presence = field ∈ `profiles.capturedFields` (NOT `value > 0`) — the core rule
+**Rule:** Presence of a money/credit field is whether its key is in `profiles.capturedFields`
+(a jsonb `string[]` of NUMERIC_PROFILE_FIELDS keys), NOT `value > 0`. A captured value may
+legitimately be `0` (e.g. confirmed "I have no debt") and is then a REAL zero; an uncaptured
+field stays unknown and its component is EXCLUDED with `partial=true`.
+**Why:** `value > 0` conflated a true $0 with the unfilled default 0, so a user with genuinely
+zero debt got debt excluded as if unknown (and couldn't ever get a real perfect DTI). An earlier
+review had *also* caught the inverse bug (unfilled 0 masquerading as perfect health) — both are
+fixed by keying off explicit capture instead of the value.
+**How to apply:** Both `scoring.ts` `computeReadiness` and `roadmap.ts` `computeRoadmap` build
+`const captured = new Set(p.capturedFields ?? [])` and gate every component via
+`captured.has("totalDebt")` etc. DTI still requires `hasIncome && hasDebt` (income capture + debt
+capture). Keep the two engines' presence flags identical. Verify the captured-0 path with the
+esbuild-bundled pure-engine test (see `esm-api-server-standalone-scripts.md`): uncaptured-0 debt →
+"Not enough data"; captured-0 debt + income → debt value 100.
 
 ## Data that is never stored → always excluded
 Income stability, credit utilization, and payment history are NOT captured anywhere, so the
