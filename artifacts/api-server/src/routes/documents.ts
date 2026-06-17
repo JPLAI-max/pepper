@@ -123,16 +123,11 @@ router.post("/documents/ingest", requireAuth, async (req, res) => {
   const userId = getSessionUserId(req)!;
   const { objectPath, name, contentType, size } = parsed.data;
 
-  // Fast reject on the declared metadata before touching storage.
-  if (!ALLOWED_DOC_TYPES.has(contentType)) {
-    res.status(400).json({ error: "Only PDF, PNG, or JPG files are supported." });
-    return;
-  }
-  if (size > MAX_DOC_BYTES) {
-    res.status(400).json({ error: "That file is too large (15MB max)." });
-    return;
-  }
-
+  // NOTE: we do NOT fast-reject on the declared type/size here. The file was
+  // already PUT to storage, so any rejection must also delete the stored
+  // object. Deletion is only safe AFTER the ownership guard below, so all
+  // type/size validation (which falls back to the declared values when the
+  // stored metadata is absent) is deferred until then.
   let objectFile;
   try {
     objectFile = await objectStorageService.getObjectEntityFile(objectPath);
