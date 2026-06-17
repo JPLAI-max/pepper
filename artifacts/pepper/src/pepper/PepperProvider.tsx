@@ -21,6 +21,8 @@ import type {
   PepperMessage,
   PepperStatus,
   PepperVoice,
+  TourState,
+  TourStop,
 } from "./types";
 
 const API_BASE = "/api";
@@ -120,6 +122,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   const [wakeWordEnabled, setWakeWordEnabledState] = useState(false);
   const [dictating, setDictating] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
+  const [tour, setTour] = useState<TourState | null>(null);
 
   const clearAuthRequired = useCallback(() => setAuthRequired(false), []);
 
@@ -264,6 +267,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       ]);
       setStatus("thinking");
       let navigate: string | undefined;
+      let tourStops: TourStop[] | undefined;
       try {
         await streamSSE(
           `${API_BASE}/openai/conversations/${id}/messages`,
@@ -280,6 +284,14 @@ export function PepperProvider({ children }: { children: ReactNode }) {
             // Allowlisted, server-resolved navigation target (Mode B overlay).
             if (typeof event.navigate === "string") {
               navigate = event.navigate;
+            }
+            // Server-owned guided tour: the ordered, allowlisted stops to walk.
+            if (
+              event.tour &&
+              typeof event.tour === "object" &&
+              Array.isArray((event.tour as { stops?: unknown }).stops)
+            ) {
+              tourStops = (event.tour as { stops: TourStop[] }).stops;
             }
             if (typeof event.content === "string") {
               setMessages((prev) =>
@@ -319,10 +331,30 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         void queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetOpportunityMatchesQueryKey() });
       }
-      return { navigate };
+      return { navigate, tour: tourStops };
     },
     [busy, ensureConversation, queryClient],
   );
+
+  const startTour = useCallback((stops: TourStop[]) => {
+    // Defensive: the server is the allowlist authority, but only start on a
+    // non-empty list of well-formed stops (each carries an in-app route).
+    const valid = stops.filter(
+      (s) => typeof s?.route === "string" && s.route.startsWith("/"),
+    );
+    if (!valid.length) return;
+    setTour({ stops: valid, index: 0 });
+  }, []);
+
+  const tourNext = useCallback(() => {
+    setTour((t) =>
+      t ? (t.index + 1 >= t.stops.length ? null : { ...t, index: t.index + 1 }) : null,
+    );
+  }, []);
+
+  const tourStop = useCallback(() => {
+    setTour(null);
+  }, []);
 
   const sendVoiceBlob = useCallback(
     async (blob: Blob) => {
@@ -537,6 +569,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     setMessages([]);
     setStatus("idle");
     setAuthRequired(false);
+    setTour(null);
   }, [stopSpeaking]);
 
   const value: PepperContextValue = {
@@ -548,6 +581,10 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     voice,
     setVoice,
     sendText,
+    tour,
+    startTour,
+    tourNext,
+    tourStop,
     startListening,
     stopListening,
     toggleListening,

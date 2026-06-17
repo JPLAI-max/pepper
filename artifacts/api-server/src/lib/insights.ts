@@ -1,5 +1,5 @@
 import type { Profile, Goal, RoadmapStep, Document } from "@workspace/db";
-import { isAllowedRoute, NAV_LABELS } from "./navigation";
+import { isAllowedRoute, NAV_LABELS, TOUR_STOPS } from "./navigation";
 
 export interface ReadinessScore {
   key: string;
@@ -184,6 +184,7 @@ export function buildCoachContext(
     overlay?: boolean;
     section?: string;
     navigateTo?: string;
+    tour?: boolean;
   } = {},
 ): string {
   const guestFraming = opts.isGuest
@@ -242,9 +243,17 @@ Keep replies concise and conversational — 2-4 short sentences unless asked for
     opts.navigateTo && isAllowedRoute(opts.navigateTo) ? opts.navigateTo : null;
   const navLabel = navRoute ? NAV_LABELS[navRoute] : null;
 
+  // Guided tour announcement. The app walks the user through the demo stops in
+  // order; Pepper only announces it (one sentence). The tour takes priority over
+  // a single-route navigation, so the nav block is suppressed when tour is on.
+  const tourBlock =
+    opts.tour && !navLabel
+      ? `\n\nGUIDED TOUR: The user asked for the guided demo tour, and it is starting NOW — the app will walk them through ${TOUR_STOPS.map((s) => s.name).join(", then ")} in order. Respond with ONE warm sentence announcing the tour${firstName ? `, addressing them as ${firstName}` : ""} (e.g. "Absolutely${firstName ? `, ${firstName}` : ""} — let's take the tour, starting at the ${TOUR_STOPS[0].name}."). Do not describe every stop; a banner with a Next control guides them through each one.`
+      : "";
+
   const overlayBlock = opts.overlay
     ? `\n\n# ACTIVE SURFACE — "HEY PEP" DASHBOARD OVERLAY
-You are in Mode B, invoked from ${safeSection ? `the ${safeSection} screen` : "the dashboard"}. Keep replies to 1-2 short sentences — the user is mid-task.${firstName ? ` The user is signed in as ${firstName}; address them by their first name and you may warmly acknowledge they're already signed in.` : ""} If they ask what something means, explain THIS screen plainly in your own voice; do not change anything. If they state a number to set (income, monthly expenses, savings, debt, or credit), restate it and ask them to confirm before it counts as saved — never assume it is set until they say yes. Never invent numbers.${navLabel ? `\n\nNAVIGATION: The user asked to be taken to ${navLabel}, and you ARE taking them there right now — the app navigates automatically as you reply. Respond with a single warm sentence confirming it${firstName ? `, addressing them as ${firstName}` : ""} (e.g. "Of course${firstName ? `, ${firstName}` : ""} — taking you to ${navLabel} now."). Do not ask them to click anything and do not describe the destination at length.` : ""}`
+You are in Mode B, invoked from ${safeSection ? `the ${safeSection} screen` : "the dashboard"}. Keep replies to 1-2 short sentences — the user is mid-task.${firstName ? ` The user is signed in as ${firstName}; address them by their first name and you may warmly acknowledge they're already signed in.` : ""} If they ask what something means, explain THIS screen plainly in your own voice; do not change anything. If they state a number to set (income, monthly expenses, savings, debt, or credit), restate it and ask them to confirm before it counts as saved — never assume it is set until they say yes. Never invent numbers.${navLabel ? `\n\nNAVIGATION: The user asked to be taken to ${navLabel}, and you ARE taking them there right now — the app navigates automatically as you reply. Respond with a single warm sentence confirming it${firstName ? `, addressing them as ${firstName}` : ""} (e.g. "Of course${firstName ? `, ${firstName}` : ""} — taking you to ${navLabel} now."). Do not ask them to click anything and do not describe the destination at length.` : ""}${tourBlock}`
     : "";
 
   return `# IDENTITY

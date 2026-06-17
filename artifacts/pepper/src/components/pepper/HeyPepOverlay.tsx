@@ -209,6 +209,7 @@ export function HeyPepOverlay() {
     status,
     busy,
     sendText,
+    startTour,
     dictateStart,
     dictateStop,
     dictating,
@@ -257,6 +258,16 @@ export function HeyPepOverlay() {
     const commit = pendingFillRef.current && affirmative;
 
     const result = await sendText(t, { mode: "overlay", section, commit });
+
+    // Pepper resolved the guided demo tour for this turn (stops are owned +
+    // allowlisted server-side). Its announcement has streamed in; hand off to
+    // the global TourBanner, which drives navigation through the stops, and
+    // close the overlay so the demo pages are unobstructed.
+    if (result.tour && result.tour.length > 0) {
+      startTour(result.tour);
+      setOpen(false);
+      return;
+    }
 
     // Pepper resolved an allowlisted navigation for this turn (validated
     // server-side). Its confirming reply has already streamed in; route there

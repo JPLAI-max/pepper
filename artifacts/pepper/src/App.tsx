@@ -6,6 +6,7 @@ import { PepperProvider } from "@/pepper";
 import { AuthProvider, useAuth, AuthModalProvider } from "@/auth";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PepperAssistant } from "@/components/pepper/PepperAssistant";
+import { TourBanner } from "@/components/pepper/TourBanner";
 import { useGetProfile, getGetProfileQueryKey } from "@workspace/api-client-react";
 import { useEffect } from "react";
 
@@ -186,6 +187,7 @@ function App() {
               <AuthModalProvider>
                 <Router />
                 <GlobalAssistant />
+                <TourBanner />
                 <RevealRedirect />
               </AuthModalProvider>
             </WouterRouter>

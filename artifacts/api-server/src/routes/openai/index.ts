@@ -28,7 +28,7 @@ import {
 import { getOrCreateProfile } from "../../lib/identity";
 import { getSessionUserId } from "../../lib/auth";
 import { extractAndPersist } from "../../lib/extraction";
-import { classifyNavigation } from "../../lib/navigation";
+import { classifyOverlayIntent, TOUR_STOPS } from "../../lib/navigation";
 import { logger } from "../../lib/logger";
 
 const router: IRouter = Router();
@@ -100,7 +100,12 @@ function scheduleExtraction(conversationId: number, userId: number | null): void
 async function buildContextMessages(
   conversationId: number,
   userId: number | null,
-  opts: { overlay?: boolean; section?: string; navigateTo?: string } = {},
+  opts: {
+    overlay?: boolean;
+    section?: string;
+    navigateTo?: string;
+    tour?: boolean;
+  } = {},
 ) {
   const isGuest = userId == null;
   const [profile, allGoals, steps, docs, history] = await Promise.all([
@@ -131,6 +136,7 @@ async function buildContextMessages(
     overlay: opts.overlay,
     section: opts.section,
     navigateTo: opts.navigateTo,
+    tour: opts.tour,
   });
 
   const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] =
@@ -201,17 +207,20 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
 
   const overlay = parsed.data.mode === "overlay";
   // Overlay (Mode B) may resolve a spoken/typed request like "take me to the
-  // trading desk" into an allowlisted in-app route. Resolving it before we build
-  // the coach context lets Pepper acknowledge the navigation by name. The
-  // allowlist is enforced server-side (see lib/navigation) — never an arbitrary
-  // path or external URL.
-  const navigateTo = overlay
-    ? await classifyNavigation(parsed.data.content)
-    : null;
+  // trading desk" into an allowlisted in-app route, OR "give me the tour" into
+  // the guided demo walkthrough. Resolving it before we build the coach context
+  // lets Pepper acknowledge it by name. The allowlist (routes AND tour stops) is
+  // enforced server-side (see lib/navigation) — never an arbitrary path or URL.
+  const intent = overlay
+    ? await classifyOverlayIntent(parsed.data.content)
+    : { navigate: null, tour: false };
+  const navigateTo = intent.navigate;
+  const startTour = intent.tour;
   const chatMessages = await buildContextMessages(id, access.userId, {
     overlay,
     section: parsed.data.section,
     navigateTo: navigateTo ?? undefined,
+    tour: startTour,
   });
   chatMessages.push({ role: "user", content: parsed.data.content });
   await db
@@ -272,7 +281,11 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
         req.log.error({ err, conversationId: id }, "Overlay commit extraction failed");
       }
     }
-    if (navigateTo) {
+    // Tour takes priority over a single-route navigation. The server owns the
+    // ordered, allowlisted stops the tour cycles through.
+    if (startTour) {
+      res.write(`data: ${JSON.stringify({ tour: { stops: TOUR_STOPS } })}\n\n`);
+    } else if (navigateTo) {
       res.write(`data: ${JSON.stringify({ navigate: navigateTo })}\n\n`);
     }
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);

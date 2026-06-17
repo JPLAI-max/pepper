@@ -32,3 +32,27 @@ non-nav overlay turns (explain/dictation) skip the extra call entirely.
   needed wiring in the text route + sendText, not the voice route.
 - First name for the signed-in greeting is `displayName.split(" ")[0]`, server/
   session-derived, skipped when "Friend" (unset default).
+
+## Guided tour (extends the above)
+
+A "tour" intent ("give me the tour", "take me through the demos", "show me
+everything") walks the demo routes in order: /market → /financing →
+/capital-markets. Same architecture as single-route nav, with these specifics:
+
+- Server: the classifier is now `classifyOverlayIntent()` returning
+  `{navigate, tour}` (gated by `mightBeOverlayIntent`). Tour stops are
+  SERVER-OWNED + allowlisted: `TOUR_STOPS` in `lib/navigation.ts`
+  (`{route,name,intro}[]`, typed `satisfies …NavRoute…`). Overlay branch emits a
+  RAW SSE `{tour:{stops:TOUR_STOPS}}` (priority over `{navigate}`), no codegen.
+  `buildCoachContext` gets `tour?:boolean` → one-sentence announcement only.
+- Client: `sendText` returns `{navigate?, tour?: TourStop[]}`. Provider holds
+  tour DATA only (`{stops,index}` + `startTour/tourNext/tourStop`) — it lives
+  OUTSIDE the wouter Router so it CANNOT navigate.
+- **CRITICAL render constraint:** `HeyPepOverlay` is suppressed on takeover
+  routes (AppLayout `isTakeover`). So the banner is a separate global
+  `<TourBanner/>` mounted in App.tsx INSIDE the Router (alongside
+  GlobalAssistant). TourBanner does the wouter navigation via a `useEffect` on
+  the current stop's route, renders the persistent banner, and carries its OWN
+  mic (dictate→regex next/stop) because the overlay isn't present on demo pages.
+- `tourNext` auto-ends after the last stop; `tourStop` removes the banner.
+  `reset()` (logout) MUST also clear tour state or a stale banner survives.
