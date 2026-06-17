@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { createSessionMiddleware } from "./lib/session";
+import { csrfOriginGuard } from "./lib/csrf";
 
 const app: Express = express();
 
@@ -35,6 +36,10 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(createSessionMiddleware());
 
+// CSRF defense for cookie-auth mutations (the session cookie is SameSite=None
+// for the cross-site preview iframe, so the browser's implicit protection is
+// gone). Must run after the session middleware and before the routes.
+app.use("/api", csrfOriginGuard);
 app.use("/api", router);
 
 export default app;

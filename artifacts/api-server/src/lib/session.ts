@@ -34,8 +34,6 @@ export function createSessionMiddleware(): RequestHandler {
   if (!secret) {
     throw new Error("SESSION_SECRET must be set to enable sessions.");
   }
-  const isProd = process.env.NODE_ENV === "production";
-
   return session({
     name: "pepper.sid",
     secret,
@@ -50,8 +48,14 @@ export function createSessionMiddleware(): RequestHandler {
     store: new PgStore({ pool, createTableIfMissing: false }),
     cookie: {
       httpOnly: true,
-      sameSite: "lax",
-      secure: isProd,
+      // The app is viewed through a cross-site iframe (the Replit preview proxy
+      // and embedded canvas), so the session cookie must be SameSite=None or the
+      // browser drops it on every subrequest — making POST /conversations issue a
+      // session that the very next POST .../messages no longer sees (403). None
+      // requires Secure, which is fine: dev preview and production both serve over
+      // HTTPS through the proxy (trust proxy is set, so req.secure is true).
+      sameSite: "none",
+      secure: true,
       maxAge: 1000 * 60 * 60 * 24 * 30,
     },
   });
