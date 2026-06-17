@@ -28,9 +28,27 @@ plain-HTTP access path on Replit. Verify with curl against
 `https://$REPLIT_DEV_DOMAIN` (NOT `localhost:80`, which is plain HTTP and will
 suppress a Secure cookie, giving a false 403).
 
+**Partitioned (CHIPS) is also required.** `SameSite=None;Secure` alone is not
+enough under Chrome third-party-cookie blocking: the cookie must ALSO be
+`partitioned: true` or it is dropped in the cross-site iframe (same 201-then-403
+symptom). express-session passes `partitioned` straight to the `cookie`
+serializer and its types accept it — no cast needed. Keep `partitioned` as an
+iframe-compatibility fix, NOT as a CSRF primitive.
+
 **CSRF tradeoff:** `SameSite=None` removes the browser's implicit cross-site
 protection, so a same-origin Origin/Referer check is required on mutating `/api`
 requests. See `lib/csrf.ts` (`csrfOriginGuard`): only POST/PUT/PATCH/DELETE are
 checked; the Origin (or Referer) host must be in the allowlist (request's own
 host + `REPLIT_DEV_DOMAIN` + `REPLIT_DOMAINS`); requests with neither header
 (curl/SSR/internal) pass, because browser CSRF always carries an Origin.
+**Do NOT broaden this to a `*.replit.dev/.app` suffix match** — that admits
+unrelated Replit tenants and is a real CSRF weakening. The canvas/preview iframe
+already serves from `REPLIT_DEV_DOMAIN`, so the exact allowlist covers it; if the
+guard ever blocks a legit origin, add that EXACT logged `sourceHost`, not a
+wildcard. (Verified: real browser traffic never tripped the guard; the iframe
+403s were the cookie-drop above, fixed by `partitioned`.)
+
+**Coach model id:** the OpenAI chat model is env-driven `COACH_MODEL` (default
+`gpt-4o`) in `openai/index.ts` + `navigation.ts`. Never hardcode a non-existent
+id (a bogus `gpt-5.4` broke every coach turn). The Replit AI-integrations proxy
+accepts `gpt-4o`.

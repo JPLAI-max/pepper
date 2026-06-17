@@ -33,6 +33,10 @@ import { logger } from "../../lib/logger";
 
 const router: IRouter = Router();
 
+// Coach chat model. Env-driven so we can roll forward without a code change;
+// defaults to a known-valid current model. Never hardcode a non-existent id.
+const COACH_MODEL = process.env.COACH_MODEL ?? "gpt-4o";
+
 const VOICE_MAP: Record<string, "shimmer" | "onyx"> = {
   female: "shimmer",
   male: "onyx",
@@ -240,7 +244,7 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
   let fullResponse = "";
   try {
     const stream = await openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: COACH_MODEL,
       max_completion_tokens: 4096,
       messages: chatMessages,
       stream: true,
@@ -341,7 +345,7 @@ router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
 
     let fullResponse = "";
     const stream = await openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: COACH_MODEL,
       max_completion_tokens: 2048,
       messages: chatMessages,
       stream: true,

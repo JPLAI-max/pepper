@@ -56,6 +56,11 @@ export function createSessionMiddleware(): RequestHandler {
       // HTTPS through the proxy (trust proxy is set, so req.secure is true).
       sameSite: "none",
       secure: true,
+      // CHIPS: partition the cookie by top-level site so Chrome's third-party
+      // cookie blocking keeps sending it inside the cross-site preview/canvas
+      // iframe. Without this the cookie is dropped and POST /conversations
+      // issues a session that the next POST .../messages can't see (403).
+      partitioned: true,
       maxAge: 1000 * 60 * 60 * 24 * 30,
     },
   });

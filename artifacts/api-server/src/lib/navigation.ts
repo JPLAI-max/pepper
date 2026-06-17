@@ -92,7 +92,7 @@ export interface OverlayIntent {
 
 const NO_INTENT: OverlayIntent = { navigate: null, tour: false };
 
-const NAV_MODEL = "gpt-5.4";
+const NAV_MODEL = process.env.COACH_MODEL ?? "gpt-4o";
 
 const NAV_SYSTEM_PROMPT = `You are a navigation intent classifier for the Pepper wealth app. Decide whether the user is asking to be TAKEN to (navigate to) one of the app's sections, or to start the guided demo TOUR.
 
