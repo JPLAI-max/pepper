@@ -1263,35 +1263,46 @@ components:
 
     DashboardSummary:
       type: object
+      description: >-
+        Dashboard header summary. Money figures are NULL when the underlying
+        profile fields have not been captured yet — the client hides them rather
+        than rendering a fabricated $0. Readiness scores, the roadmap, and
+        opportunity matches are read from their own engine-backed endpoints
+        (GET /scores, /roadmap, /opportunities/matches) so the dashboard can
+        never diverge from those surfaces.
       properties:
         netWorth:
-          type: integer
+          description: cashSavings + otherAssets - totalDebt; null unless both an asset figure and debt are captured.
+          oneOf:
+            - type: integer
+            - type: "null"
         monthlyCashflow:
-          type: integer
+          description: monthlyIncome - monthlyExpenses; null unless both are captured.
+          oneOf:
+            - type: integer
+            - type: "null"
         totalAssets:
-          type: integer
+          description: Sum of captured asset components; null when none are captured.
+          oneOf:
+            - type: integer
+            - type: "null"
         totalDebt:
-          type: integer
+          description: Captured total debt; null when not captured.
+          oneOf:
+            - type: integer
+            - type: "null"
         activeGoals:
           type: integer
         achievedGoals:
-          type: integer
-        avgReadiness:
           type: integer
         documentsComplete:
           type: integer
         documentsTotal:
           type: integer
-        topScore:
-          $ref: "#/components/schemas/ReadinessScore"
         nextStep:
           oneOf:
             - $ref: "#/components/schemas/RoadmapStep"
             - type: "null"
-        recommendedOpportunities:
-          type: array
-          items:
-            $ref: "#/components/schemas/Opportunity"
       required:
         - netWorth
         - monthlyCashflow
@@ -1299,10 +1310,8 @@ components:
         - totalDebt
         - activeGoals
         - achievedGoals
-        - avgReadiness
         - documentsComplete
         - documentsTotal
-        - recommendedOpportunities
 
     OpenaiConversation:
       type: object

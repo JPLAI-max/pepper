@@ -1,8 +1,32 @@
 import React from "react";
 import { Link } from "wouter";
-import { useGetDashboardSummary } from "@workspace/api-client-react";
+import {
+  useGetDashboardSummary,
+  useGetReadinessScores,
+  useGetRoadmap,
+  useGetOpportunityMatches,
+} from "@workspace/api-client-react";
+import type {
+  ReadinessScore,
+  RoadmapPlanStep,
+  OpportunityMatch,
+} from "@workspace/api-client-react";
 import { usePepper } from "@/pepper";
-import { Sparkles, Target, Shield, FileText, ArrowRight, Wallet, Banknote, ChevronRight, CheckCircle2 } from "lucide-react";
+import {
+  Sparkles,
+  Target,
+  Shield,
+  FileText,
+  ArrowRight,
+  Wallet,
+  Banknote,
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  Clock,
+  AlertTriangle,
+  Lock,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 const DASH_TOKENS: React.CSSProperties = {
@@ -12,6 +36,7 @@ const DASH_TOKENS: React.CSSProperties = {
   ["--accent" as string]: "#ff7e3f",
   ["--amber" as string]: "#ffb454",
   ["--gold" as string]: "#ffd98a",
+  ["--success" as string]: "#5fd0a3",
   ["--ink" as string]: "#f6ece1",
   ["--muted" as string]: "#a8978a",
   ["--line" as string]: "rgba(255,180,120,.14)",
@@ -51,12 +76,116 @@ const dashStyles = `
 .pep-dash .pd-skel{background:var(--card);border:1px solid var(--line);border-radius:22px;
   animation:pd-pulse 1.6s ease-in-out infinite}
 @keyframes pd-pulse{0%,100%{opacity:.5}50%{opacity:.85}}
-.pep-dash .pd-link{color:var(--accent);font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.pep-dash .pd-link{color:var(--accent);font-weight:500;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
 .pep-dash .pd-link:hover{text-decoration:underline}
+.pep-dash .pd-ring{transition:stroke-dashoffset 1s ease-out}
+.pep-dash .pd-sec-head{font-family:'Fraunces',Georgia,serif;font-weight:300;letter-spacing:.005em}
+.pep-dash .pd-badge{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+  padding:4px 10px;border-radius:999px;border:1px solid var(--line)}
+.pep-dash .pd-opp{background:var(--card);border:1px solid var(--line);border-radius:20px;backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);transition:border-color .15s ease,transform .15s ease}
+.pep-dash .pd-opp:hover{border-color:rgba(255,180,120,.28)}
+.pep-dash .pd-opp.later{opacity:.5}
 `;
+
+// Educational band → color/label. Color by the numeric value; the label comes
+// from the engine's own tier so the dashboard never invents a band the rest of
+// the app doesn't show.
+function bandColor(score: number): string {
+  if (score >= 80) return "var(--gold)";
+  if (score >= 60) return "var(--amber)";
+  if (score >= 40) return "var(--accent)";
+  return "var(--muted)";
+}
+
+// Hero copy is derived from the user's average readiness band — never a static
+// "you're on track" claim. With no scores yet we invite them to start.
+function heroCopy(avg: number | null): { title: string; sub: string } {
+  if (avg === null)
+    return {
+      title: "Let's build your wealth foundation.",
+      sub: "Share your goals and finances with Pepper to generate your readiness scores and a personalized roadmap.",
+    };
+  if (avg >= 80)
+    return {
+      title: "Your wealth foundation is strong.",
+      sub: "Your readiness is in great shape. Keep the momentum going on your roadmap.",
+    };
+  if (avg >= 60)
+    return {
+      title: "You're building real momentum.",
+      sub: "Your readiness is climbing. Stay with your roadmap to keep it moving forward.",
+    };
+  if (avg >= 40)
+    return {
+      title: "You're making steady progress.",
+      sub: "A few focused moves will lift your readiness. Your roadmap shows where to start.",
+    };
+  return {
+    title: "Every step from here builds your wealth.",
+    sub: "Let's strengthen the fundamentals first. Your roadmap breaks it into clear, manageable steps.",
+  };
+}
+
+function RingScore({ score }: { score: ReadinessScore }) {
+  const value = score.value ?? score.score;
+  const color = bandColor(value);
+  const r = 40;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="relative">
+        <svg className="w-24 h-24" style={{ transform: "rotate(-90deg)" }}>
+          <circle
+            cx="48"
+            cy="48"
+            r={r}
+            fill="transparent"
+            stroke="rgba(255,180,120,.10)"
+            strokeWidth="6"
+          />
+          <circle
+            cx="48"
+            cy="48"
+            r={r}
+            fill="transparent"
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - value / 100)}
+            className="pd-ring"
+            style={{ stroke: color }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="pd-num text-2xl" style={{ color }}>
+            {value}
+          </span>
+        </div>
+      </div>
+      <span className="text-sm mt-2" style={{ color: "var(--ink)", fontWeight: 500 }}>
+        {score.label}
+      </span>
+      <span className="text-xs pd-muted capitalize">
+        {(score.band ?? score.tier).replace(/_/g, " ")}
+      </span>
+    </div>
+  );
+}
+
+function statusIcon(status: string) {
+  if (status === "done")
+    return <CheckCircle2 className="w-5 h-5" style={{ color: "var(--success)" }} />;
+  if (status === "in_progress")
+    return <Clock className="w-5 h-5" style={{ color: "var(--accent)" }} />;
+  return <Circle className="w-5 h-5" style={{ color: "var(--muted)" }} />;
+}
 
 export default function Dashboard() {
   const { data: summary, isLoading } = useGetDashboardSummary();
+  const { data: scores } = useGetReadinessScores();
+  const { data: roadmap } = useGetRoadmap();
+  const { data: opps } = useGetOpportunityMatches();
   const { setOpen } = usePepper();
 
   if (isLoading) {
@@ -79,6 +208,28 @@ export default function Dashboard() {
 
   if (!summary) return null;
 
+  const avg =
+    scores && scores.length
+      ? Math.round(
+          scores.reduce((sum, s) => sum + (s.value ?? s.score), 0) /
+            scores.length,
+        )
+      : null;
+  const hero = heroCopy(avg);
+
+  const sortedSteps: RoadmapPlanStep[] = roadmap
+    ? [...roadmap.steps].sort((a, b) => a.order - b.order)
+    : [];
+  const nextAction = sortedSteps.find((s) => s.status !== "done") ?? null;
+
+  const matches: OpportunityMatch[] = opps?.matches ?? [];
+  const comingLater: OpportunityMatch[] = opps?.comingLater ?? [];
+
+  // Only render money cards whose figure was actually captured.
+  const showNetWorth = summary.netWorth !== null;
+  const showCashflow = summary.monthlyCashflow !== null;
+  const showMoneyRow = showNetWorth || showCashflow;
+
   return (
     <div className="pep-dash" style={DASH_TOKENS}>
       <style>{dashStyles}</style>
@@ -96,10 +247,8 @@ export default function Dashboard() {
             <Sparkles className="w-4 h-4" style={{ color: "var(--accent)" }} />
             <span>Command Center</span>
           </div>
-          <h1 className="pd-display text-4xl md:text-5xl mb-4">Your wealth trajectory is looking strong.</h1>
-          <p className="pd-muted text-lg mb-8 max-w-2xl leading-relaxed">
-            You are on track. Based on your current cashflow and roadmap, you're ready to take the next step toward your goals.
-          </p>
+          <h1 className="pd-display text-4xl md:text-5xl mb-4">{hero.title}</h1>
+          <p className="pd-muted text-lg mb-8 max-w-2xl leading-relaxed">{hero.sub}</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <button onClick={() => setOpen(true)} className="pd-cta">
               <Sparkles className="w-5 h-5" />
@@ -107,74 +256,256 @@ export default function Dashboard() {
             </button>
             {summary.nextStep && (
               <Link href="/roadmap" className="pd-cta-ghost">
-                View Next Action <ChevronRight className="w-5 h-5" style={{ color: "var(--muted)" }} />
+                View Next Action{" "}
+                <ChevronRight className="w-5 h-5" style={{ color: "var(--muted)" }} />
               </Link>
             )}
           </div>
         </div>
       </motion.div>
 
-      {/* Main KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
-          <div className="pd-card h-full p-7">
-            <div className="pd-eyebrow flex items-center gap-2" style={{ letterSpacing: ".12em" }}>
-              <Wallet className="w-4 h-4" style={{ color: "var(--gold)" }} />
-              Total Net Worth
-            </div>
-            <div className="pd-num pos text-4xl md:text-5xl pt-3">${summary.netWorth.toLocaleString()}</div>
-            <div className="text-sm pd-muted mt-6 space-y-3">
-              <div className="flex justify-between items-center pb-2 pd-divider">
-                <span>Assets</span>
-                <span style={{ color: "var(--ink)" }}>${summary.totalAssets.toLocaleString()}</span>
+      {/* Money snapshot — only the figures the user has actually shared */}
+      {showMoneyRow && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {showNetWorth && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+            >
+              <div className="pd-card h-full p-7">
+                <div
+                  className="pd-eyebrow flex items-center gap-2"
+                  style={{ letterSpacing: ".12em" }}
+                >
+                  <Wallet className="w-4 h-4" style={{ color: "var(--gold)" }} />
+                  Total Net Worth
+                </div>
+                <div className="pd-num pos text-4xl md:text-5xl pt-3">
+                  ${(summary.netWorth as number).toLocaleString()}
+                </div>
+                <div className="text-sm pd-muted mt-6 space-y-3">
+                  {summary.totalAssets !== null && (
+                    <div className="flex justify-between items-center pb-2 pd-divider">
+                      <span>Assets</span>
+                      <span style={{ color: "var(--ink)" }}>
+                        ${summary.totalAssets.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {summary.totalDebt !== null && (
+                    <div className="flex justify-between items-center">
+                      <span>Debt</span>
+                      <span style={{ color: "var(--ink)" }}>
+                        ${summary.totalDebt.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span>Debt</span>
-                <span style={{ color: "var(--ink)" }}>${summary.totalDebt.toLocaleString()}</span>
+            </motion.div>
+          )}
+
+          {showCashflow && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+            >
+              <div className="pd-card h-full p-7">
+                <div
+                  className="pd-eyebrow flex items-center gap-2"
+                  style={{ letterSpacing: ".12em" }}
+                >
+                  <Banknote className="w-4 h-4" style={{ color: "var(--amber)" }} />
+                  Monthly Cashflow
+                </div>
+                <div className="pd-num pos text-4xl md:text-5xl pt-3">
+                  ${(summary.monthlyCashflow as number).toLocaleString()}
+                </div>
+                <p className="text-sm pd-muted mt-6 leading-relaxed">
+                  Your monthly income minus expenses — the engine behind every
+                  step on your roadmap.
+                </p>
               </div>
-            </div>
-          </div>
-        </motion.div>
+            </motion.div>
+          )}
+        </div>
+      )}
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
-          <div className="pd-card h-full p-7">
-            <div className="pd-eyebrow flex items-center gap-2" style={{ letterSpacing: ".12em" }}>
-              <Banknote className="w-4 h-4" style={{ color: "var(--amber)" }} />
-              Monthly Cashflow
+      {/* Readiness — all six engine scores, same source as the Readiness page */}
+      {scores && scores.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="pd-card p-7 mt-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5" style={{ color: "var(--accent)" }} />
+              <h2 className="pd-sec-head text-2xl">Readiness</h2>
             </div>
-            <div className="pd-num pos text-4xl md:text-5xl pt-3">${summary.monthlyCashflow.toLocaleString()}</div>
-            <p className="text-sm pd-muted mt-6 leading-relaxed">
-              Your monthly income minus expenses. This positive cashflow is the engine for your wealth creation.
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
-          <div className="pd-card h-full p-7">
-            <div className="pd-eyebrow flex items-center gap-2" style={{ letterSpacing: ".12em" }}>
-              <Shield className="w-4 h-4" style={{ color: "var(--accent)" }} />
-              Top Readiness Score
-            </div>
-            <div className="pd-num text-4xl md:text-5xl pt-3" style={{ color: "var(--accent)" }}>
-              {summary.topScore ? summary.topScore.score : 0}
-              <span className="text-2xl pd-muted">/100</span>
-            </div>
-            <p className="text-sm mt-6 mb-1" style={{ color: "var(--ink)", fontWeight: 500 }}>
-              {summary.topScore ? summary.topScore.label : "Profile Setup"}
-            </p>
-            <p className="text-xs pd-muted mb-4">
-              {summary.topScore ? "You are in a strong position for this." : "Complete your profile to unlock scores."}
-            </p>
             <Link href="/readiness" className="pd-link text-sm">
               Analyze readiness <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6">
+            {scores.map((s) => (
+              <RingScore key={s.key} score={s} />
+            ))}
+          </div>
         </motion.div>
-      </div>
+      )}
+
+      {/* Roadmap — live primary obstacle, next action, and step statuses */}
+      {roadmap && sortedSteps.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.4 }}
+          className="pd-card p-7 mt-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Target className="w-5 h-5" style={{ color: "var(--accent)" }} />
+              <h2 className="pd-sec-head text-2xl">Your Roadmap</h2>
+            </div>
+            <Link href="/roadmap" className="pd-link text-sm">
+              Open roadmap <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {roadmap.primaryObstacle && (
+            <div
+              className="flex items-start gap-3 p-4 mb-6 rounded-2xl"
+              style={{
+                background: "rgba(255,126,63,.08)",
+                border: "1px solid var(--line)",
+              }}
+            >
+              <AlertTriangle
+                className="w-5 h-5 mt-0.5 shrink-0"
+                style={{ color: "var(--accent)" }}
+              />
+              <div>
+                <p className="text-sm" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                  Primary focus: {roadmap.primaryObstacle.label}
+                </p>
+                <p className="text-sm pd-muted mt-1 leading-relaxed">
+                  {roadmap.primaryObstacle.detail}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {nextAction && (
+            <div className="mb-6">
+              <div className="pd-eyebrow mb-2" style={{ letterSpacing: ".12em" }}>
+                Next action
+              </div>
+              <p style={{ color: "var(--ink)", fontWeight: 500 }}>{nextAction.action}</p>
+              {nextAction.detail && (
+                <p className="text-sm pd-muted mt-1 leading-relaxed">
+                  {nextAction.detail}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {sortedSteps.slice(0, 5).map((step, i) => (
+              <div key={step.id ?? i} className="flex items-start gap-3">
+                <div className="mt-0.5 shrink-0">{statusIcon(step.status)}</div>
+                <span
+                  className="text-sm leading-relaxed"
+                  style={{
+                    color: step.status === "done" ? "var(--muted)" : "var(--ink)",
+                    textDecoration:
+                      step.status === "done" ? "line-through" : "none",
+                  }}
+                >
+                  {step.action}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Opportunities — educational matches; future products dimmed */}
+      {opps && (matches.length > 0 || comingLater.length > 0) && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="pd-card p-7 mt-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5" style={{ color: "var(--accent)" }} />
+              <h2 className="pd-sec-head text-2xl">Opportunities</h2>
+            </div>
+            <Link href="/opportunities" className="pd-link text-sm">
+              Explore all <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {matches.map((m) => (
+              <div key={m.key} className="pd-opp p-5 flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <span
+                    className="pd-badge"
+                    style={{ color: "var(--accent)", background: "rgba(255,126,63,.08)" }}
+                  >
+                    {m.category}
+                  </span>
+                </div>
+                <h3 className="text-lg mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                  {m.title}
+                </h3>
+                <p className="text-sm pd-muted leading-relaxed flex-1">{m.description}</p>
+                <p className="text-xs pd-muted mt-3 italic leading-relaxed">{m.rationale}</p>
+                <button
+                  onClick={() => setOpen(true)}
+                  className="pd-link text-sm mt-4 self-start"
+                >
+                  Ask Pepper about this <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+
+            {comingLater.map((m) => (
+              <div key={m.key} className="pd-opp later p-5 flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <span
+                    className="pd-badge"
+                    style={{ color: "var(--muted)", background: "rgba(255,180,120,.05)" }}
+                  >
+                    {m.category}
+                  </span>
+                  <span className="pd-badge flex items-center gap-1" style={{ color: "var(--muted)" }}>
+                    <Lock className="w-3 h-3" /> Coming later
+                  </span>
+                </div>
+                <h3 className="text-lg mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                  {m.title}
+                </h3>
+                <p className="text-sm pd-muted leading-relaxed flex-1">{m.description}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Progress Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+        >
           <Link href="/goals" className="block">
             <div className="pd-card pd-row p-6 md:p-7 flex items-center justify-between cursor-pointer">
               <div className="flex items-center gap-5">
@@ -182,10 +513,13 @@ export default function Dashboard() {
                   <Target className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>Wealth Goals</h3>
+                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                    Wealth Goals
+                  </h3>
                   <p className="text-sm pd-muted flex items-center gap-1.5">
                     <span style={{ color: "var(--gold)", fontWeight: 500 }} className="flex items-center">
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{summary.achievedGoals} achieved
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      {summary.achievedGoals} achieved
                     </span>
                     <span style={{ opacity: 0.3 }}>•</span>
                     <span>{summary.activeGoals} active</span>
@@ -199,7 +533,11 @@ export default function Dashboard() {
           </Link>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
           <Link href="/documents" className="block">
             <div className="pd-card pd-row p-6 md:p-7 flex items-center justify-between cursor-pointer">
               <div className="flex items-center gap-5">
@@ -207,9 +545,14 @@ export default function Dashboard() {
                   <FileText className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>Document Vault</h3>
+                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                    Document Vault
+                  </h3>
                   <p className="text-sm pd-muted">
-                    <span style={{ color: "var(--ink)", fontWeight: 500 }}>{summary.documentsComplete}</span> of {summary.documentsTotal} needed files verified
+                    <span style={{ color: "var(--ink)", fontWeight: 500 }}>
+                      {summary.documentsComplete}
+                    </span>{" "}
+                    of {summary.documentsTotal} needed files verified
                   </p>
                 </div>
               </div>

@@ -452,27 +452,14 @@ export const GetReadinessScoresResponse = zod.array(GetReadinessScoresResponseIt
  * @summary Aggregated dashboard summary
  */
 export const GetDashboardSummaryResponse = zod.object({
-  "netWorth": zod.number(),
-  "monthlyCashflow": zod.number(),
-  "totalAssets": zod.number(),
-  "totalDebt": zod.number(),
+  "netWorth": zod.union([zod.number(),zod.null()]).describe('cashSavings + otherAssets - totalDebt; null unless both an asset figure and debt are captured.'),
+  "monthlyCashflow": zod.union([zod.number(),zod.null()]).describe('monthlyIncome - monthlyExpenses; null unless both are captured.'),
+  "totalAssets": zod.union([zod.number(),zod.null()]).describe('Sum of captured asset components; null when none are captured.'),
+  "totalDebt": zod.union([zod.number(),zod.null()]).describe('Captured total debt; null when not captured.'),
   "activeGoals": zod.number(),
   "achievedGoals": zod.number(),
-  "avgReadiness": zod.number(),
   "documentsComplete": zod.number(),
   "documentsTotal": zod.number(),
-  "topScore": zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "score": zod.number(),
-  "tier": zod.string(),
-  "summary": zod.string(),
-  "value": zod.number().optional().describe('Deterministic engine score 0-100.'),
-  "band": zod.string().optional().describe('Band label for the value (engine).'),
-  "partial": zod.boolean().optional().describe('True when some component data was absent and excluded.'),
-  "helpingFactor": zod.string().nullish().describe('Single biggest helping factor (educational why).'),
-  "hurtingFactor": zod.string().nullish().describe('Single biggest hurting factor (educational why).')
-}).optional(),
   "nextStep": zod.union([zod.object({
   "id": zod.number(),
   "title": zod.string(),
@@ -483,21 +470,8 @@ export const GetDashboardSummaryResponse = zod.object({
   "goalId": zod.number().nullish(),
   "horizon": zod.string().nullish(),
   "createdAt": zod.coerce.date()
-}),zod.null()]).optional(),
-  "recommendedOpportunities": zod.array(zod.object({
-  "id": zod.number(),
-  "kind": zod.string(),
-  "title": zod.string(),
-  "summary": zod.string(),
-  "detail": zod.string().nullish(),
-  "rate": zod.string().nullish(),
-  "term": zod.string().nullish(),
-  "minAmount": zod.number(),
-  "tag": zod.string().nullish(),
-  "recommended": zod.boolean(),
-  "createdAt": zod.coerce.date()
-}))
-})
+}),zod.null()]).optional()
+}).describe('Dashboard header summary. Money figures are NULL when the underlying profile fields have not been captured yet — the client hides them rather than rendering a fabricated $0. Readiness scores, the roadmap, and opportunity matches are read from their own engine-backed endpoints (GET \/scores, \/roadmap, \/opportunities\/matches) so the dashboard can never diverge from those surfaces.')
 
 
 /**

@@ -9,7 +9,13 @@ import {
 } from "react";
 import { useVoiceRecorder } from "@workspace/integrations-openai-ai-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetProfileQueryKey } from "@workspace/api-client-react";
+import {
+  getGetProfileQueryKey,
+  getGetDashboardSummaryQueryKey,
+  getGetReadinessScoresQueryKey,
+  getGetRoadmapQueryKey,
+  getGetOpportunityMatchesQueryKey,
+} from "@workspace/api-client-react";
 import type {
   PepperContextValue,
   PepperMessage,
@@ -299,8 +305,14 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       } finally {
         setStatus("idle");
         // The turn may have advanced the coach's extraction (e.g. flipping
-        // readyForReveal); refresh the profile so the reveal trigger can react.
+        // readyForReveal, updating financials). Refresh the profile so the
+        // reveal trigger can react, plus every engine-backed surface the
+        // dashboard shows so it never lags behind the conversation.
         void queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetReadinessScoresQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetOpportunityMatchesQueryKey() });
       }
     },
     [busy, ensureConversation, queryClient],
@@ -368,8 +380,14 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       } finally {
         setStatus("idle");
         // The turn may have advanced the coach's extraction (e.g. flipping
-        // readyForReveal); refresh the profile so the reveal trigger can react.
+        // readyForReveal, updating financials). Refresh the profile so the
+        // reveal trigger can react, plus every engine-backed surface the
+        // dashboard shows so it never lags behind the conversation.
         void queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetReadinessScoresQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetOpportunityMatchesQueryKey() });
       }
     },
     [ensureConversation, voice, playAudio, queryClient],

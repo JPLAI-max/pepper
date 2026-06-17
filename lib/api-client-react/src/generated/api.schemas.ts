@@ -473,19 +473,23 @@ export interface ReadinessScore {
   hurtingFactor?: string | null;
 }
 
+/**
+ * Dashboard header summary. Money figures are NULL when the underlying profile fields have not been captured yet — the client hides them rather than rendering a fabricated $0. Readiness scores, the roadmap, and opportunity matches are read from their own engine-backed endpoints (GET /scores, /roadmap, /opportunities/matches) so the dashboard can never diverge from those surfaces.
+ */
 export interface DashboardSummary {
-  netWorth: number;
-  monthlyCashflow: number;
-  totalAssets: number;
-  totalDebt: number;
+  /** cashSavings + otherAssets - totalDebt; null unless both an asset figure and debt are captured. */
+  netWorth: number | null;
+  /** monthlyIncome - monthlyExpenses; null unless both are captured. */
+  monthlyCashflow: number | null;
+  /** Sum of captured asset components; null when none are captured. */
+  totalAssets: number | null;
+  /** Captured total debt; null when not captured. */
+  totalDebt: number | null;
   activeGoals: number;
   achievedGoals: number;
-  avgReadiness: number;
   documentsComplete: number;
   documentsTotal: number;
-  topScore?: ReadinessScore;
   nextStep?: RoadmapStep | null;
-  recommendedOpportunities: Opportunity[];
 }
 
 export interface OpenaiConversation {
