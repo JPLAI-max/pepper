@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pepper — Capital Markets (Simulation)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0908; --surface:#171210; --card:rgba(28,21,17,.6);
+    --ember:#ff7e3f; --copper:#d8531f; --amber:#ffb454; --gold:#ffd98a; --deep:#5e2410;
+    --ink:#f6ece1; --muted:#a8978a; --faint:#6e6258; --line:rgba(255,180,120,.14);
+    --up:#8fc99a; --down:#e08a6a; --crypto:#a98bff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);
+    background:radial-gradient(120% 70% at 50% 0%, rgba(216,83,31,.1), rgba(216,83,31,0) 50%), linear-gradient(180deg,var(--bg),#070605 60%);
+    min-height:100svh;-webkit-font-smoothing:antialiased}
+  .simbar{position:sticky;top:0;z-index:40;background:repeating-linear-gradient(45deg,rgba(216,83,31,.16),rgba(216,83,31,.16) 12px,rgba(216,83,31,.08) 12px,rgba(216,83,31,.08) 24px);
+    border-bottom:1px solid var(--line);text-align:center;padding:7px 12px;font-size:.72rem;letter-spacing:.08em;color:var(--gold)}
+  .simbar b{color:var(--ink)}
+  header{display:flex;align-items:center;gap:11px;padding:16px 22px;max-width:1040px;margin:0 auto;flex-wrap:wrap}
+  .orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 36% 30%,var(--gold),var(--amber) 18%,var(--ember) 48%,var(--copper) 78%,var(--deep));box-shadow:0 0 14px rgba(255,126,63,.5);animation:breathe 6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .wordmark{font-weight:600;letter-spacing:.15em;font-size:.8rem}
+  .tabs{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .tabs button{background:none;border:1px solid transparent;color:var(--muted);font-size:.84rem;padding:7px 13px;border-radius:999px;cursor:pointer}
+  .tabs button.on{color:var(--ink);border-color:var(--line);background:var(--card)}
+  main{max-width:1040px;margin:0 auto;padding:8px 22px 80px}
+  .view{display:none}.view.on{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:2rem;margin:14px 0 4px}
+  .subtitle{color:var(--muted);margin-bottom:20px;font-size:.96rem;max-width:60ch}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:14px}
+  .money{font-family:'Fraunces',serif}
+  .engine{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px;align-items:end}
+  @media(max-width:760px){.engine{grid-template-columns:1fr 1fr}}
+  .field label{display:block;font-size:.74rem;color:var(--muted);margin-bottom:6px}
+  .field input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:var(--ink);font-size:.98rem;outline:none}
+  .run{border:none;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,var(--amber),var(--ember));color:#3a1606;white-space:nowrap}
+  .engine-result{margin-top:14px;font-size:.92rem;color:var(--gold);min-height:1.2em}
+  .auto-badge{display:inline-block;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 35%,transparent);border-radius:999px;padding:3px 9px;margin-left:8px}
+  .loans{display:flex;flex-direction:column;gap:11px}
+  .loan{display:grid;grid-template-columns:1fr repeat(4,auto) auto;align-items:center;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 18px}
+  @media(max-width:760px){.loan{grid-template-columns:1fr auto;row-gap:6px}}
+  .loan .name{font-weight:600}.loan .sub{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .loan .col{text-align:right}.loan .col .k{font-size:.7rem;color:var(--muted)}.loan .col .v{font-family:'Fraunces',serif;font-size:1.02rem}
+  .fundbtn{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:9px;padding:9px 14px;cursor:pointer;font-weight:600}
+  .fundbtn:hover{border-color:var(--ember)}
+  .progress{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;grid-column:1/-1;margin-top:4px}
+  .progress span{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--ember))}
+  .funded-tag{color:var(--up);font-size:.82rem;font-weight:600}
+  .sm{display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:10px}
+  @media(max-width:760px){.sm{grid-template-columns:1fr auto}}
+  .sm .name{font-weight:600}.sm .sub{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .sm .col{text-align:right}.sm .col .k{font-size:.7rem;color:var(--muted)}.sm .col .v{font-family:'Fraunces',serif;font-size:1.02rem}
+  .up{color:var(--up)}.down{color:var(--down)}
+  .trade{border:none;border-radius:9px;padding:9px 16px;cursor:pointer;font-weight:600;background:linear-gradient(180deg,var(--amber),var(--ember));color:#3a1606}
+  .cbar{background:repeating-linear-gradient(45deg,rgba(169,139,255,.14),rgba(169,139,255,.14) 12px,rgba(169,139,255,.06) 12px,rgba(169,139,255,.06) 24px);border:1px solid color-mix(in srgb,var(--crypto) 30%,transparent);border-radius:14px;padding:13px 16px;margin-bottom:18px;font-size:.84rem;color:#d8ccff}
+  .cbar b{color:#fff}
+  .wallet{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .wallet .panel .k{font-size:.76rem;color:var(--muted);margin-bottom:6px}
+  .wallet .panel .v{font-family:'Fraunces',serif;font-size:1.7rem}
+  .wallet .panel .v.c{color:var(--crypto)}
+  .token{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:10px}
+  .tok-ic{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#cdbcff,var(--crypto) 60%,#6a4fd0);display:grid;place-items:center;font-weight:700;color:#1a1330;font-size:.8rem}
+  .token .name{font-weight:600}.token .sub{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .token .bal{font-family:'Fraunces',serif;text-align:right}
+  .disclaim{margin-top:30px;color:var(--faint);font-size:.76rem;line-height:1.6;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+  <div class="simbar"><b>SIMULATION</b> — prototype for legal review. No real loans, capital, securities, or digital assets. No funding, trading, or settlement occurs. Illustrative only.</div>
+  <header>
+    <div class="orb"></div><div class="wordmark">PEPPER · CAPITAL MARKETS</div>
+    <div class="tabs">
+      <button class="on" data-tab="funding" id="t-funding">Funding Desk</button>
+      <button data-tab="secondary" id="t-secondary">Secondary Market</button>
+      <button data-tab="crypto" id="t-crypto">Crypto</button>
+    </div>
+  </header>
+  <main>
+    <section class="view on" id="v-funding">
+      <h1 class="title">Funding Desk</h1>
+      <div class="subtitle">Originated loans posted for funding. Fund manually, or let the auto-fund engine table-fund across loans by your criteria. Funded loans flow to the secondary market.</div>
+      <div class="panel">
+        <div style="font-weight:600;margin-bottom:14px">Auto-fund engine <span class="auto-badge">automated</span></div>
+        <div class="engine">
+          <div class="field"><label>Capital to deploy ($)</label><input id="cap" type="number" value="500000"></div>
+          <div class="field"><label>Min yield (%)</label><input id="miny" type="number" value="7" step="0.1"></div>
+          <div class="field"><label>Max LTV (%)</label><input id="maxltv" type="number" value="75"></div>
+          <div class="field"><label>Max per loan ($)</label><input id="maxper" type="number" value="200000"></div>
+          <button class="run" id="runBtn">Run auto-fund</button>
+        </div>
+        <div class="engine-result" id="engineResult"></div>
+      </div>
+      <div class="loans" id="loanList"></div>
+      <div class="disclaim" id="disc1"></div>
+    </section>
+    <section class="view" id="v-secondary">
+      <h1 class="title">Secondary Market</h1>
+      <div class="subtitle">Funded loans become tradeable positions. Illustrative pricing per $100 of face value.</div>
+      <div id="smList"></div>
+      <div class="disclaim" id="disc2"></div>
+    </section>
+    <section class="view" id="v-crypto">
+      <h1 class="title">Crypto <span class="auto-badge" style="color:var(--crypto);border-color:color-mix(in srgb,var(--crypto) 35%,transparent)">exploratory</span></h1>
+      <div class="cbar"><b>Exploratory — not live.</b> Stablecoin settlement and tokenized positions are a future concept only, subject to securities law, money-transmission/MSB and state licensing, and emerging digital-asset regulation. Nothing here moves real value. This section exists to frame the questions, not to operate.</div>
+      <div class="wallet">
+        <div class="panel"><div class="k">Stablecoin balance (illustrative)</div><div class="v c">12,500 USDC</div></div>
+        <div class="panel"><div class="k">Tokenized position value</div><div class="v">$8,420</div></div>
+      </div>
+      <div style="font-weight:600;margin:6px 0 12px">Tokenized positions (concept)</div>
+      <div id="tokenList"></div>
+      <div class="disclaim" id="disc3"></div>
+    </section>
+  </main>
+<script>
+  const DISCLAIM = "Simulation only. All loans, capital, rates, prices, balances, tokens, and digital assets shown are illustrative and do not represent real instruments, offerings, funding, trades, or settlement. No money or value moves. Built as a prototype to illustrate product scope and surface regulatory questions for legal review.";
+  ['disc1','disc2','disc3'].forEach(id=>document.getElementById(id).textContent=DISCLAIM);
+  const usd = n => "$"+Math.round(n).toLocaleString();
+  let LOANS = [
+    { id:"L1", name:"Bridge · Maple Court Triplex", loc:"Austin, TX", amt:420000, yield:8.2, ltv:68, term:"12 mo", funded:0 },
+    { id:"L2", name:"DSCR · Riverside 18-unit", loc:"Phoenix, AZ", amt:1250000, yield:7.4, ltv:72, term:"30 yr", funded:0 },
+    { id:"L3", name:"Fix & Flip · Oakwood Duplex", loc:"Nashville, TN", amt:310000, yield:9.1, ltv:70, term:"9 mo", funded:0 },
+    { id:"L4", name:"Bridge · Harbor View Lofts", loc:"Tampa, FL", amt:880000, yield:7.0, ltv:64, term:"18 mo", funded:0 },
+    { id:"L5", name:"DSCR · Sunset Bungalows", loc:"San Antonio, TX", amt:540000, yield:8.6, ltv:74, term:"30 yr", funded:0 },
+    { id:"L6", name:"Fix & Flip · Cedar Park Homes", loc:"Raleigh, NC", amt:260000, yield:9.4, ltv:78, term:"9 mo", funded:0 },
+  ];
+  let funded = [];
+  function renderLoans(){
+    document.getElementById('loanList').innerHTML = LOANS.map(l=>{
+      const pct = Math.round(l.funded/l.amt*100);
+      const done = l.funded>=l.amt;
+      return `<div class="loan" data-id="${l.id}">
+        <div><div class="name">${l.name}</div><div class="sub">${l.loc} · ${l.term}</div></div>
+        <div class="col"><div class="k">Loan amount</div><div class="v">${usd(l.amt)}</div></div>
+        <div class="col"><div class="k">Yield</div><div class="v" style="color:var(--gold)">${l.yield}%</div></div>
+        <div class="col"><div class="k">LTV</div><div class="v">${l.ltv}%</div></div>
+        <div class="col"><div class="k">Funded</div><div class="v">${pct}%</div></div>
+        ${done?'<span class="funded-tag">✓ Funded</span>':`<button class="fundbtn" data-id="${l.id}">Table-fund</button>`}
+        <div class="progress"><span style="width:${pct}%"></span></div>
+      </div>`;
+    }).join('');
+    document.querySelectorAll('.fundbtn').forEach(b=>b.onclick=()=>fundLoan(b.dataset.id));
+  }
+  function fundLoan(id){ const l = LOANS.find(x=>x.id===id); if(!l) return; l.funded = l.amt; moveToSecondary(l); renderLoans(); }
+  function moveToSecondary(l){ if(funded.find(f=>f.id===l.id)) return; funded.push({ id:l.id, name:l.name, loc:l.loc, yield:l.yield, price:100.0, chg:(Math.random()*2-0.6) }); }
+  document.getElementById('runBtn').onclick=()=>{
+    let cap = +document.getElementById('cap').value||0;
+    const minY = +document.getElementById('miny').value||0;
+    const maxL = +document.getElementById('maxltv').value||100;
+    const maxPer = +document.getElementById('maxper').value||cap;
+    let deployed=0, count=0, yields=[];
+    LOANS.filter(l=>l.funded<l.amt && l.yield>=minY && l.ltv<=maxL)
+         .sort((a,b)=>b.yield-a.yield)
+         .forEach(l=>{
+            if(cap<=0) return;
+            const need = l.amt - l.funded;
+            const alloc = Math.min(need, maxPer, cap);
+            if(alloc<=0) return;
+            l.funded += alloc; cap-=alloc; deployed+=alloc; count++; yields.push(l.yield);
+            if(l.funded>=l.amt) moveToSecondary(l);
+         });
+    const avg = yields.length? (yields.reduce((a,b)=>a+b,0)/yields.length).toFixed(1) : 0;
+    document.getElementById('engineResult').textContent = count
+      ? `Auto-funded ${usd(deployed)} across ${count} loan${count>1?'s':''} at ${avg}% avg yield. ${usd(cap)} capital remaining. (Simulated)`
+      : `No loans matched your criteria. (Simulated)`;
+    renderLoans();
+  };
+  function renderSecondary(){
+    const el = document.getElementById('smList');
+    el.innerHTML = funded.length ? funded.map(f=>`
+      <div class="sm">
+        <div><div class="name">${f.name}</div><div class="sub">${f.loc} · funded loan position</div></div>
+        <div class="col"><div class="k">Price / $100</div><div class="v">$${f.price.toFixed(2)}</div></div>
+        <div class="col"><div class="k">Yield</div><div class="v" style="color:var(--gold)">${f.yield}%</div></div>
+        <div class="col ${f.chg>=0?'up':'down'}"><div class="k">Today</div><div class="v">${f.chg>=0?'▲':'▼'} ${Math.abs(f.chg).toFixed(2)}%</div></div>
+        <button class="trade">Trade</button>
+      </div>`).join('')
+      : `<div class="subtitle">No funded positions yet — fund a loan on the Funding Desk and it appears here as a tradeable position.</div>`;
+  }
+  const TOKENS = [
+    { sym:"pUSD", name:"Pepper USD (stablecoin)", sub:"Settlement rail · concept", bal:"12,500.00" },
+    { sym:"INC", name:"Tokenized Income Unit", sub:"Maple Court Triplex · concept", bal:"120 units" },
+    { sym:"LN", name:"Tokenized Loan Position", sub:"Oakwood Duplex · concept", bal:"$3,100" },
+  ];
+  function renderTokens(){
+    document.getElementById('tokenList').innerHTML = TOKENS.map(t=>`
+      <div class="token"><div class="tok-ic">${t.sym}</div>
+      <div><div class="name">${t.name}</div><div class="sub">${t.sub}</div></div>
+      <div class="bal">${t.bal}</div></div>`).join('');
+  }
+  function show(tab){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+    document.getElementById('v-'+tab).classList.add('on');
+    document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+    if(tab==='secondary') renderSecondary();
+    if(tab==='crypto') renderTokens();
+    window.scrollTo(0,0);
+  }
+  document.getElementById('t-funding').onclick=()=>show('funding');
+  document.getElementById('t-secondary').onclick=()=>show('secondary');
+  document.getElementById('t-crypto').onclick=()=>show('crypto');
+  renderLoans();
+</script>
+</body>
+</html>

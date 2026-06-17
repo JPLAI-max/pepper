@@ -5,8 +5,10 @@ description: How to mount an isolated full-screen iframe page (e.g. /reveal, /ma
 
 Some Pepper routes are full-screen takeovers that embed a standalone HTML doc
 verbatim via iframe (pattern from `pages/Reveal.tsx`): `pages/Market.tsx`
-(/market, trading-desk demo) and `pages/Financing.tsx` (/financing). They are
-**pure simulations** — no real money/securities, no DB writes, no external calls.
+(/market, trading-desk demo), `pages/Financing.tsx` (/financing), and
+`pages/CapitalMarkets.tsx` (/capital-markets, funding/secondary/crypto tabs).
+They are **pure simulations** — no real money/securities/digital-assets, no DB
+writes, no external/wallet/blockchain calls.
 
 To mount one safely there are THREE coordinated places, and missing any one
 leaks a real engine onto the simulation screen:
