@@ -1,0 +1,25 @@
+→ REPLIT (build)
+
+Sync first: git fetch origin && git reset --hard origin/main.
+
+Build — Fully integrate the dashboard with the live engines. The dashboard must reflect the same data as the rest of the app, with no legacy/divergent scoring and no fabricated values. Reuse the Reveal's existing component styles (score rings, timeline, opportunity cards) for cohesion.
+
+PART 1 — Fix the score source (correctness — top priority).
+- Stop using the legacy computeScores in /dashboard/summary. Dashboard scores must come from the SAME source as GET /scores (the capturedFields-aware computeReadiness / persisted scores table). Render ALL SIX readiness scores (homeownership, credit, debt, investment, passive income, wealth) using the Reveal's ring styling. The dashboard score must never diverge from the readiness page.
+
+PART 2 — Roadmap section.
+- Show the live roadmap from GET /roadmap: the primary obstacle + next-best-action, and the steps with their preserved status. Reuse the Reveal's timeline styling. Keep the CTA to /roadmap.
+
+PART 3 — Opportunities section.
+- Add an opportunities section from GET /opportunities/matches — the per-user informational matches, with gated "coming later" items dimmed (not actionable). Reuse the Reveal's opportunity card styling.
+
+PART 4 — Hide empty position stats.
+- Net worth, assets, debt, cashflow must hide when the underlying data isn't captured/present — never render a fabricated $0. Match the Reveal's hide-on-empty behavior.
+
+PART 5 — Fix hardcoded narrative copy.
+- Remove or data-gate "You are on track…" and "You are in a strong position for this." They must reflect actual state (derive from the score band) — a low score must never read "strong position." If it can't be made truthful from data, remove it.
+
+PART 6 — Live reflection consistency.
+- In PepperProvider, after a coach turn or overlay commit that writes profile data, invalidate the dashboardSummary, scores, AND roadmap query keys (mirror what the document path already does), so the dashboard refreshes immediately after coach/overlay writes — not just document writes.
+
+Keep all dashboard reads auth-scoped per-user (unchanged). Do not alter write paths, auth, storage, or the engines themselves — only the dashboard's integration with them.
