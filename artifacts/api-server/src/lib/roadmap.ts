@@ -172,11 +172,15 @@ export function computeRoadmap(
   goals: Goal[],
   scores: ReadinessResult[],
 ): RoadmapPlan {
-  const hasIncome = p.monthlyIncome > 0;
-  const hasExpenses = p.monthlyExpenses > 0;
-  const hasSavings = p.cashSavings > 0;
-  const hasDebt = p.totalDebt > 0;
-  const hasCredit = p.creditScore > 0;
+  // Presence keys off the user's EXPLICITLY captured fields, not `value > 0`,
+  // so a captured 0 (e.g. confirmed "no debt") is real and an unfilled default
+  // 0 stays unknown — mirrors lib/scoring exactly.
+  const captured = new Set(p.capturedFields ?? []);
+  const hasIncome = captured.has("monthlyIncome");
+  const hasExpenses = captured.has("monthlyExpenses");
+  const hasSavings = captured.has("cashSavings");
+  const hasDebt = captured.has("totalDebt");
+  const hasCredit = captured.has("creditScore");
 
   const goal = primaryGoal(goals);
   const category = goal?.category ?? null;

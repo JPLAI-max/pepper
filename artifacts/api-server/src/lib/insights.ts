@@ -154,6 +154,8 @@ export const GUEST_PROFILE: Profile = {
   onboarded: false,
   nextAction: null,
   readyForReveal: false,
+  // A guest has explicitly stated nothing yet.
+  capturedFields: [],
   updatedAt: new Date(),
 };
 

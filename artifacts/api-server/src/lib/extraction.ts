@@ -15,7 +15,7 @@ import { persistRoadmap } from "./roadmap";
 // Cheap/small model — this runs on every user turn, so keep cost down.
 const EXTRACT_MODEL = process.env.EXTRACT_MODEL ?? "gpt-4o-mini";
 
-const EXTRACTION_SYSTEM_PROMPT = `Extract the user's financial profile from the ENTIRE conversation so far. Always re-state every value the user has stated at any point — carry forward values mentioned in earlier turns even if this latest turn did not repeat them. Only change a value if the user explicitly updates it (e.g. "I paid off my car loan"). Return ONLY this JSON shape. Use null ONLY for values the user has never stated anywhere in the conversation. NEVER invent or estimate numbers. Set ready_for_reveal true only once goal + income + debt + a credit sense + a spending sense are all present. Always populate next_action with the single highest-impact next step.
+const EXTRACTION_SYSTEM_PROMPT = `Extract the user's financial profile from the ENTIRE conversation so far. Always re-state every value the user has stated at any point — carry forward values mentioned in earlier turns even if this latest turn did not repeat them. Only change a value if the user explicitly updates it (e.g. "I paid off my car loan"). Return ONLY this JSON shape. A field is non-null ONLY when the user has EXPLICITLY stated it; use null for every value the user has never stated anywhere in the conversation. When the user explicitly says they have none or zero of something ("I have no debt", "no credit card balance", "I don't have any savings"), record 0 for that field — an explicit zero is a stated value, NOT null. NEVER invent, estimate, infer, or fill in a number the user did not give; an unstated field must stay null (never 0). Set ready_for_reveal true only once goal + income + debt + a credit sense + a spending sense are all present. Always populate next_action with the single highest-impact next step.
 
 Shape:
 {
@@ -279,15 +279,33 @@ export async function persistProfileFields(
 
   const updates: Partial<Profile> = {};
   const changes: { field: string; previous: string | null; next: string }[] = [];
+  // Keys to mark as captured: every numeric field actually present in `mapped`.
+  // mapToProfileFields only emits a field when the user explicitly stated it
+  // (an explicit "zero"/"none" produces 0 here), so this is exactly the set of
+  // user-stated fields — never a default or inferred value. Capture is additive
+  // and value-independent: re-confirming an unchanged value (e.g. a stated 0
+  // that already equals the column's 0 default) still captures the field.
+  const capturedNow: string[] = [];
 
   for (const field of NUMERIC_PROFILE_FIELDS) {
     const next = mapped[field];
     if (typeof next !== "number" || !Number.isFinite(next)) continue;
+    capturedNow.push(field);
     const prev = profile[field];
     if (next !== prev) {
       (updates[field] as number) = next;
       changes.push({ field, previous: String(prev), next: String(next) });
     }
+  }
+
+  // Union the newly-captured keys into the stored set. Scoring/roadmap key
+  // presence off this set, so a grown capture set must trigger a recompute even
+  // when no numeric value changed (a captured 0 that equals the existing 0).
+  const prevCaptured = profile.capturedFields ?? [];
+  const nextCaptured = Array.from(new Set([...prevCaptured, ...capturedNow]));
+  const capturedGrew = nextCaptured.length > prevCaptured.length;
+  if (capturedGrew) {
+    updates.capturedFields = nextCaptured;
   }
 
   // next_action: store when present and changed.
@@ -311,21 +329,26 @@ export async function persistProfileFields(
     });
   }
 
-  if (changes.length === 0) return [];
+  // Nothing to do when neither a value changed nor the capture set grew.
+  if (changes.length === 0 && !capturedGrew) return [];
 
   await db
     .update(profiles)
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(profiles.userId, userId));
 
-  await db.insert(profileHistory).values(
-    changes.map((c) => ({
-      userId,
-      field: c.field,
-      previousValue: c.previous,
-      newValue: c.next,
-    })),
-  );
+  // profile_history records actual value changes only — growing the capture set
+  // (e.g. confirming an already-0 field) is not a value change.
+  if (changes.length > 0) {
+    await db.insert(profileHistory).values(
+      changes.map((c) => ({
+        userId,
+        field: c.field,
+        previousValue: c.previous,
+        newValue: c.next,
+      })),
+    );
+  }
 
   logger.info(
     { userId, source: extras?.source, changed: changes.map((c) => c.field) },
@@ -347,5 +370,8 @@ export async function persistProfileFields(
     logger.warn({ userId, err }, "Roadmap regenerate after persist failed");
   }
 
-  return changes.map((c) => c.field);
+  // Report value changes plus any fields newly marked captured (a confirmation
+  // of an already-equal value still "did something" the caller should surface).
+  const newlyCaptured = capturedNow.filter((f) => !prevCaptured.includes(f));
+  return Array.from(new Set([...changes.map((c) => c.field), ...newlyCaptured]));
 }

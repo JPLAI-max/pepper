@@ -151,22 +151,25 @@ const capitalValue = (cashSavings: number, otherAssets: number) =>
   clamp(((cashSavings + otherAssets) / 50000) * 100);
 
 /**
- * Compute all readiness scores for a profile. Presence of a field is `value > 0`
- * (0 is the unfilled default in this app). Income-stability and credit
- * utilization / payment history are not captured yet, so any component relying
- * on them is always excluded and its score marked partial.
+ * Compute all readiness scores for a profile. Presence of a field is whether
+ * the user has EXPLICITLY captured it (its key is in `capturedFields`) — NOT
+ * `value > 0`. This is what closes the $0-vs-unfilled gap: a captured 0 (e.g.
+ * confirmed "no debt") is present and real, while an unfilled default 0 stays
+ * unknown and is excluded. Income-stability and credit utilization / payment
+ * history are not captured yet, so any component relying on them is always
+ * excluded and its score marked partial.
  */
 export function computeReadiness(p: Profile): ReadinessResult[] {
-  const hasIncome = p.monthlyIncome > 0;
-  const hasExpenses = p.monthlyExpenses > 0;
-  const hasSavings = p.cashSavings > 0;
-  const hasAssets = p.otherAssets > 0;
-  const hasCredit = p.creditScore > 0;
-  // 0 is the unfilled default in this app, so an unknown debt balance is
-  // indistinguishable from a true $0. Per the "never invent" rule we only
-  // compute debt-to-income once BOTH income and a debt figure are present —
-  // otherwise unknown debt would masquerade as perfect debt health.
-  const hasDebt = p.totalDebt > 0;
+  const captured = new Set(p.capturedFields ?? []);
+  const hasIncome = captured.has("monthlyIncome");
+  const hasExpenses = captured.has("monthlyExpenses");
+  const hasSavings = captured.has("cashSavings");
+  const hasAssets = captured.has("otherAssets");
+  const hasCredit = captured.has("creditScore");
+  // A captured debt figure may legitimately be $0 ("I have no debt"); only then
+  // is debt-to-income real. We still gate DTI on income being captured too, so
+  // an unknown debt balance never masquerades as perfect debt health.
+  const hasDebt = captured.has("totalDebt");
 
   // Shared component definitions (built once, reused across scores).
   const credit: Component = {

@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
@@ -68,6 +69,14 @@ export const profiles = pgTable("profiles", {
   // Written by the silent extraction pass after each conversation turn.
   nextAction: text("next_action"),
   readyForReveal: boolean("ready_for_reveal").notNull().default(false),
+  // The NUMERIC_PROFILE_FIELDS keys the user has EXPLICITLY stated or confirmed
+  // (an explicit "zero"/"none" counts). Scoring/roadmap treat a field as present
+  // only when its key is in here — so a captured 0 is a real zero, while an
+  // unfilled-default 0 stays unknown. Never auto-captured by default/inference.
+  capturedFields: jsonb("captured_fields")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -105,6 +114,7 @@ export const profileUpdateSchema = createInsertSchema(profiles, {
     userId: true,
     nextAction: true,
     readyForReveal: true,
+    capturedFields: true,
   })
   .partial();
 
