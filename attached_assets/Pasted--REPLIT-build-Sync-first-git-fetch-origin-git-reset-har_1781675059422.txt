@@ -1,0 +1,21 @@
+→ REPLIT (build)
+
+Sync first: git fetch origin && git reset --hard origin/main.
+
+Build — Voice/conversational navigation + guided tour in the Hey Pep overlay (Mode B). Extends the existing overlay — do not rebuild it.
+
+PART 1 — Per-route navigation intent.
+- The overlay coach returns an optional "navigate" field mapping natural language to an ALLOWLISTED route only: /dashboard, /market, /financing, /capital-markets, /roadmap, /reveal. ("trading desk" → /market; "financing" → /financing; "capital markets"/"loan trading" → /capital-markets.) Anything not on the list → no navigate, no external URLs, no arbitrary paths.
+
+PART 2 — Personalized, logged-in-aware greeting.
+- Pass the authenticated user's first name (session-derived from their own profile, never a client value) into Mode B so Pepper addresses them and acknowledges they're signed in ("Of course, [name] — taking you there").
+
+PART 3 — Guided tour.
+- Add a "tour" intent: "take me through the demos", "show me all the demos", "give me the tour", "show me everything" → Pepper announces the tour and starts a guided walkthrough in order: /market → /financing → /capital-markets.
+- At each stop, show a small persistent tour banner: "Pepper tour · [stop name] (n/total) · Next →" with a Next control. Advance by tapping Next OR saying "next"; a short one-line intro is shown/spoken at each stop. "Stop the tour" (or finishing the last stop) exits the tour and removes the banner.
+- The tour only cycles the allowlisted in-app routes — never an external destination.
+
+PART 4 — Client routing.
+- On a navigate or tour action, show/speak Pepper's reply, route via the in-app client router (wouter), and manage the overlay accordingly. Works from both typed and voice input.
+
+Security: routes allowlisted server-side (no open redirect, in-app authenticated routes only); Mode B coach stays server-side, OpenAI key never client-exposed; existing explain/dictation behaviors unchanged. Execute and commit the code — do not save this as a file.
