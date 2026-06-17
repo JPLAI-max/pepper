@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pepper — Ambient "Hey Pep" (Reference)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0908; --ember:#ff7e3f; --copper:#d8531f; --amber:#ffb454; --gold:#ffd98a; --deep:#5e2410;
+    --ink:#f6ece1; --muted:#a8978a; --faint:#6e6258; --line:rgba(255,180,120,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);background:#070605;min-height:100svh;overflow:hidden}
+
+  .trigger{position:fixed;right:22px;top:22px;z-index:6;border:1px solid var(--line);background:rgba(28,21,17,.6);color:var(--ink);border-radius:999px;padding:10px 16px;cursor:pointer;font-size:.84rem}
+  .mute{position:fixed;left:22px;top:22px;z-index:6;border:1px solid var(--line);background:rgba(28,21,17,.6);color:var(--muted);border-radius:999px;padding:9px 14px;cursor:pointer;font-size:.82rem}
+
+  /* ---- ambient layer: its OWN background. background + orb only. ---- */
+  .ambient{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(80% 60% at 50% 42%, rgba(216,83,31,.18), rgba(7,6,5,0) 60%), linear-gradient(180deg,var(--bg),#070605 60%);
+    opacity:0;pointer-events:none;transition:opacity .5s ease}
+  .ambient.on{opacity:1;pointer-events:auto}
+
+  .orb-big{width:200px;height:200px;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%, #fff3e2, var(--gold) 14%, var(--amber) 34%, var(--ember) 58%, var(--copper) 80%, var(--deep) 100%);
+    box-shadow:0 0 90px rgba(255,126,63,.55), 0 0 170px rgba(216,83,31,.32);
+    animation:breathe 5s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 90px rgba(255,126,63,.55),0 0 170px rgba(216,83,31,.32)}
+    50%{transform:scale(1.05);box-shadow:0 0 120px rgba(255,126,63,.72),0 0 210px rgba(216,83,31,.42)}}
+
+  .greet{font-family:'Fraunces',serif;font-weight:300;font-size:2.3rem;margin-top:36px;text-align:center;line-height:1.2}
+  .greet .sub{display:block;font-size:1.15rem;color:var(--muted);margin-top:6px;font-family:'Inter'}
+
+  .listening{display:flex;align-items:center;gap:8px;margin-top:26px;color:var(--gold);font-size:.86rem;letter-spacing:.04em}
+  .listening .dot{width:7px;height:7px;border-radius:50%;background:var(--ember);animation:pulse 1.2s ease-in-out infinite}
+  .listening .dot:nth-child(2){animation-delay:.2s}.listening .dot:nth-child(3){animation-delay:.4s}
+  @keyframes pulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+
+  .heard{margin-top:24px;min-height:1.4em;font-size:1.05rem;color:var(--ink);text-align:center;opacity:0;transition:opacity .3s;max-width:560px;padding:0 20px}
+  .heard.on{opacity:1}
+  .reply{margin-top:12px;max-width:560px;text-align:center;color:var(--gold);font-size:.98rem;min-height:1.2em;opacity:0;transition:opacity .3s;padding:0 20px}
+  .reply.on{opacity:1}
+  .dismiss{margin-top:34px;color:var(--faint);font-size:.8rem;cursor:pointer;background:none;border:none}
+  .dismiss:hover{color:var(--muted)}
+</style>
+</head>
+<body>
+  <button class="trigger" id="trigger">▶ Say "Hey Pep"</button>
+  <button class="mute" id="mute">🔊 voice on</button>
+
+  <!-- ambient layer: background + orb only -->
+  <div class="ambient" id="ambient">
+    <div class="orb-big"></div>
+    <div class="greet" id="greet">Hey JPL<span class="sub">How can I help?</span></div>
+    <div class="listening" id="listening"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Listening…</div>
+    <div class="heard" id="heard"></div>
+    <div class="reply" id="reply"></div>
+    <button class="dismiss" id="dismiss">never mind</button>
+  </div>
+
+<script>
+  const ambient=document.getElementById('ambient'), heard=document.getElementById('heard'),
+        reply=document.getElementById('reply'), listening=document.getElementById('listening'),
+        greet=document.getElementById('greet');
+  let voiceOn=true;
+  const mute=document.getElementById('mute');
+  mute.onclick=()=>{ voiceOn=!voiceOn; mute.textContent = voiceOn?'🔊 voice on':'🔇 voice off'; if(!voiceOn) speechSynthesis.cancel(); };
+  function say(t){ if(!voiceOn||!('speechSynthesis' in window)) return; speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(t); u.rate=1; u.pitch=1; speechSynthesis.speak(u); }
+
+  function wake(){ ambient.classList.add('on');
+    heard.classList.remove('on'); reply.classList.remove('on'); heard.textContent=''; reply.textContent='';
+    listening.style.display='flex'; greet.style.display='block';
+    say('Hey JPL. How can I help?');
+    setTimeout(demoFlow, 1700); }
+  function sleep(){ ambient.classList.remove('on'); speechSynthesis.cancel(); }
+  document.getElementById('trigger').onclick=wake;
+  document.getElementById('dismiss').onclick=sleep;
+  ambient.addEventListener('click',e=>{ if(e.target===ambient) sleep(); });
+
+  // scripted example (reference only): spoken back too
+  function demoFlow(){
+    greet.style.display='none'; listening.style.display='none';
+    heard.textContent='“Hey Pep, give me a breakdown of my positions.”'; heard.classList.add('on');
+    setTimeout(()=>{
+      const line='You hold 3 simulated positions worth about $7,412 — Oakwood is your largest at $3,810, up 2.3% today, all yielding 8 to 8.6 percent. Illustrative only.';
+      reply.textContent=line; reply.classList.add('on'); say(line);
+    }, 1500);
+  }
+</script>
+</body>
+</html>
