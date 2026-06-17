@@ -2,11 +2,58 @@ import React from "react";
 import { Link } from "wouter";
 import { useGetDashboardSummary } from "@workspace/api-client-react";
 import { usePepper } from "@/pepper";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Sparkles, Target, Shield, FileText, ArrowRight, Wallet, Banknote, ChevronRight, CheckCircle2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+
+const DASH_TOKENS: React.CSSProperties = {
+  ["--bg" as string]: "#0b0908",
+  ["--surface" as string]: "#171210",
+  ["--card" as string]: "rgba(28,21,17,.6)",
+  ["--accent" as string]: "#ff7e3f",
+  ["--amber" as string]: "#ffb454",
+  ["--gold" as string]: "#ffd98a",
+  ["--ink" as string]: "#f6ece1",
+  ["--muted" as string]: "#a8978a",
+  ["--line" as string]: "rgba(255,180,120,.14)",
+};
+
+const dashStyles = `
+.pep-dash{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);max-width:72rem;margin:0 auto}
+.pep-dash .pd-display{font-family:'Fraunces',Georgia,serif;font-weight:300;line-height:1.15;letter-spacing:.005em;color:var(--ink)}
+.pep-dash .pd-num{font-family:'Fraunces',Georgia,serif;font-weight:400;letter-spacing:-.01em;color:var(--ink)}
+.pep-dash .pd-num.pos{color:var(--gold)}
+.pep-dash .pd-eyebrow{font-size:.74rem;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.pep-dash .pd-card{background:var(--card);border:1px solid var(--line);border-radius:22px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.pep-dash .pd-hero{position:relative;overflow:hidden;border-radius:26px;border:1px solid var(--line);
+  background:
+    radial-gradient(120% 90% at 85% 0%, rgba(255,126,63,.16) 0%, rgba(255,126,63,0) 55%),
+    linear-gradient(135deg, rgba(28,21,17,.85), rgba(28,21,17,.45));
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.pep-dash .pd-hero-glow{position:absolute;top:-30%;right:-10%;width:480px;height:480px;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,126,63,.18), rgba(255,126,63,0) 70%);pointer-events:none}
+.pep-dash .pd-muted{color:var(--muted)}
+.pep-dash .pd-cta{display:inline-flex;align-items:center;gap:8px;border:none;cursor:pointer;border-radius:999px;
+  padding:14px 28px;font-weight:600;font-size:1rem;font-family:'Inter',sans-serif;
+  background:linear-gradient(180deg,var(--amber),var(--accent));color:#3a1606;transition:transform .15s ease,box-shadow .15s ease}
+.pep-dash .pd-cta:hover{transform:scale(1.03);box-shadow:0 0 26px rgba(255,126,63,.4)}
+.pep-dash .pd-cta-ghost{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:14px 26px;
+  font-weight:500;font-size:1rem;color:var(--ink);background:rgba(255,180,120,.06);
+  border:1px solid var(--line);transition:background .15s ease}
+.pep-dash .pd-cta-ghost:hover{background:rgba(255,180,120,.12)}
+.pep-dash .pd-tile{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,180,120,.07);border:1px solid var(--line);color:var(--ink)}
+.pep-dash .pd-chev{width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,180,120,.06);color:var(--muted);transition:background .15s ease,color .15s ease}
+.pep-dash .pd-row:hover .pd-chev{background:var(--accent);color:#3a1606}
+.pep-dash .pd-row{transition:border-color .15s ease,background .15s ease}
+.pep-dash .pd-row:hover{border-color:rgba(255,180,120,.28)}
+.pep-dash .pd-divider{border-bottom:1px solid var(--line)}
+.pep-dash .pd-skel{background:var(--card);border:1px solid var(--line);border-radius:22px;
+  animation:pd-pulse 1.6s ease-in-out infinite}
+@keyframes pd-pulse{0%,100%{opacity:.5}50%{opacity:.85}}
+.pep-dash .pd-link{color:var(--accent);font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.pep-dash .pd-link:hover{text-decoration:underline}
+`;
 
 export default function Dashboard() {
   const { data: summary, isLoading } = useGetDashboardSummary();
@@ -14,16 +61,17 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-[160px] w-full rounded-3xl bg-secondary/50" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-[220px] rounded-3xl bg-secondary/50" />
-          <Skeleton className="h-[220px] rounded-3xl bg-secondary/50" />
-          <Skeleton className="h-[220px] rounded-3xl bg-secondary/50" />
+      <div className="pep-dash" style={DASH_TOKENS}>
+        <style>{dashStyles}</style>
+        <div className="pd-skel" style={{ height: 180 }} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <div className="pd-skel" style={{ height: 220 }} />
+          <div className="pd-skel" style={{ height: 220 }} />
+          <div className="pd-skel" style={{ height: 220 }} />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Skeleton className="h-[140px] rounded-3xl bg-secondary/50" />
-          <Skeleton className="h-[140px] rounded-3xl bg-secondary/50" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div className="pd-skel" style={{ height: 130 }} />
+          <div className="pd-skel" style={{ height: 130 }} />
         </div>
       </div>
     );
@@ -32,167 +80,143 @@ export default function Dashboard() {
   if (!summary) return null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="pep-dash" style={DASH_TOKENS}>
+      <style>{dashStyles}</style>
+
       {/* Hero / Command Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20, filter: "blur(5px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-secondary/80 to-card shadow-xl p-8 md:p-10 backdrop-blur-xl"
+        className="pd-hero p-8 md:p-11"
       >
-        <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] pointer-events-none transform translate-x-1/3 -translate-y-1/3" />
-        
+        <div className="pd-hero-glow" />
         <div className="relative z-10">
-          <div className="flex items-center gap-2 text-primary font-medium tracking-widest text-xs uppercase mb-4">
-            <Sparkles className="w-4 h-4" />
+          <div className="pd-eyebrow flex items-center gap-2 mb-5">
+            <Sparkles className="w-4 h-4" style={{ color: "var(--accent)" }} />
             <span>Command Center</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-serif text-foreground mb-4 tracking-tight">Your wealth trajectory is looking strong.</h1>
-          <p className="text-muted-foreground text-lg mb-8 max-w-2xl font-light">
+          <h1 className="pd-display text-4xl md:text-5xl mb-4">Your wealth trajectory is looking strong.</h1>
+          <p className="pd-muted text-lg mb-8 max-w-2xl leading-relaxed">
             You are on track. Based on your current cashflow and roadmap, you're ready to take the next step toward your goals.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button onClick={() => setOpen(true)} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(232,93,63,0.4)] h-12 px-8 font-medium text-base transition-all">
-              <Sparkles className="w-5 h-5 mr-2" />
+            <button onClick={() => setOpen(true)} className="pd-cta">
+              <Sparkles className="w-5 h-5" />
               Ask Pepper
-            </Button>
+            </button>
             {summary.nextStep && (
-              <Button asChild variant="outline" className="rounded-full h-12 px-8 font-medium text-base border-white/10 bg-secondary/30 hover:bg-secondary text-foreground backdrop-blur-sm transition-all">
-                <Link href="/roadmap">
-                  View Next Action <ChevronRight className="w-5 h-5 ml-1 text-muted-foreground" />
-                </Link>
-              </Button>
+              <Link href="/roadmap" className="pd-cta-ghost">
+                View Next Action <ChevronRight className="w-5 h-5" style={{ color: "var(--muted)" }} />
+              </Link>
             )}
           </div>
         </div>
       </motion.div>
 
       {/* Main KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
-          <Card className="h-full border-white/5 bg-card/60 backdrop-blur-md shadow-lg hover:shadow-xl hover:bg-card/80 transition-all rounded-3xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-gold/10 transition-colors" />
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2 text-muted-foreground uppercase tracking-wider text-xs font-semibold">
-                <Wallet className="w-4 h-4 text-gold" />
-                Total Net Worth
-              </CardDescription>
-              <CardTitle className="text-4xl md:text-5xl font-serif text-foreground tracking-tight pt-2">
-                ${summary.netWorth.toLocaleString()}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm font-medium text-muted-foreground mt-6 space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                  <span>Assets</span>
-                  <span className="text-foreground">${summary.totalAssets.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Debt</span>
-                  <span className="text-foreground">${summary.totalDebt.toLocaleString()}</span>
-                </div>
+          <div className="pd-card h-full p-7">
+            <div className="pd-eyebrow flex items-center gap-2" style={{ letterSpacing: ".12em" }}>
+              <Wallet className="w-4 h-4" style={{ color: "var(--gold)" }} />
+              Total Net Worth
+            </div>
+            <div className="pd-num pos text-4xl md:text-5xl pt-3">${summary.netWorth.toLocaleString()}</div>
+            <div className="text-sm pd-muted mt-6 space-y-3">
+              <div className="flex justify-between items-center pb-2 pd-divider">
+                <span>Assets</span>
+                <span style={{ color: "var(--ink)" }}>${summary.totalAssets.toLocaleString()}</span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex justify-between items-center">
+                <span>Debt</span>
+                <span style={{ color: "var(--ink)" }}>${summary.totalDebt.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
-          <Card className="h-full border-white/5 bg-card/60 backdrop-blur-md shadow-lg hover:shadow-xl hover:bg-card/80 transition-all rounded-3xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-success/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-success/10 transition-colors" />
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2 text-muted-foreground uppercase tracking-wider text-xs font-semibold">
-                <Banknote className="w-4 h-4 text-success" />
-                Monthly Cashflow
-              </CardDescription>
-              <CardTitle className="text-4xl md:text-5xl font-serif text-foreground tracking-tight pt-2">
-                ${summary.monthlyCashflow.toLocaleString()}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mt-6 leading-relaxed">
-                Your monthly income minus expenses. This positive cashflow is the engine for your wealth creation.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="pd-card h-full p-7">
+            <div className="pd-eyebrow flex items-center gap-2" style={{ letterSpacing: ".12em" }}>
+              <Banknote className="w-4 h-4" style={{ color: "var(--amber)" }} />
+              Monthly Cashflow
+            </div>
+            <div className="pd-num pos text-4xl md:text-5xl pt-3">${summary.monthlyCashflow.toLocaleString()}</div>
+            <p className="text-sm pd-muted mt-6 leading-relaxed">
+              Your monthly income minus expenses. This positive cashflow is the engine for your wealth creation.
+            </p>
+          </div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
-          <Card className="h-full border-white/5 bg-card/60 backdrop-blur-md shadow-lg hover:shadow-xl hover:bg-card/80 transition-all rounded-3xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-primary/10 transition-colors" />
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2 text-muted-foreground uppercase tracking-wider text-xs font-semibold">
-                <Shield className="w-4 h-4 text-primary" />
-                Top Readiness Score
-              </CardDescription>
-              <CardTitle className="text-4xl md:text-5xl font-serif text-primary tracking-tight pt-2">
-                {summary.topScore ? summary.topScore.score : 0}<span className="text-2xl text-muted-foreground">/100</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm font-medium text-foreground mt-6 mb-1">
-                {summary.topScore ? summary.topScore.label : "Profile Setup"}
-              </p>
-              <p className="text-xs text-muted-foreground mb-4">
-                {summary.topScore ? "You are in a strong position for this." : "Complete your profile to unlock scores."}
-              </p>
-              <Button variant="link" className="p-0 h-auto text-primary font-medium hover:text-primary-foreground transition-colors group-hover:underline" asChild>
-                <Link href="/readiness" className="flex items-center">
-                  Analyze readiness <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="pd-card h-full p-7">
+            <div className="pd-eyebrow flex items-center gap-2" style={{ letterSpacing: ".12em" }}>
+              <Shield className="w-4 h-4" style={{ color: "var(--accent)" }} />
+              Top Readiness Score
+            </div>
+            <div className="pd-num text-4xl md:text-5xl pt-3" style={{ color: "var(--accent)" }}>
+              {summary.topScore ? summary.topScore.score : 0}
+              <span className="text-2xl pd-muted">/100</span>
+            </div>
+            <p className="text-sm mt-6 mb-1" style={{ color: "var(--ink)", fontWeight: 500 }}>
+              {summary.topScore ? summary.topScore.label : "Profile Setup"}
+            </p>
+            <p className="text-xs pd-muted mb-4">
+              {summary.topScore ? "You are in a strong position for this." : "Complete your profile to unlock scores."}
+            </p>
+            <Link href="/readiness" className="pd-link text-sm">
+              Analyze readiness <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </motion.div>
       </div>
 
       {/* Progress Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}>
           <Link href="/goals" className="block">
-            <Card className="border-white/5 bg-card/40 backdrop-blur-md hover:bg-secondary/40 transition-all rounded-3xl cursor-pointer group">
-              <CardContent className="p-6 md:p-8 flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-secondary border border-white/5 flex items-center justify-center text-foreground shadow-inner group-hover:scale-105 transition-transform">
-                    <Target className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-xl text-foreground mb-1">Wealth Goals</h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                      <span className="text-success font-medium flex items-center"><CheckCircle2 className="w-3.5 h-3.5 mr-1" />{summary.achievedGoals} achieved</span>
-                      <span className="opacity-30">•</span>
-                      <span>{summary.activeGoals} active</span>
-                    </p>
-                  </div>
+            <div className="pd-card pd-row p-6 md:p-7 flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-5">
+                <div className="pd-tile">
+                  <Target className="w-7 h-7" />
                 </div>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-secondary/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <ChevronRight className="w-5 h-5" />
+                <div>
+                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>Wealth Goals</h3>
+                  <p className="text-sm pd-muted flex items-center gap-1.5">
+                    <span style={{ color: "var(--gold)", fontWeight: 500 }} className="flex items-center">
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{summary.achievedGoals} achieved
+                    </span>
+                    <span style={{ opacity: 0.3 }}>•</span>
+                    <span>{summary.activeGoals} active</span>
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="pd-chev">
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </div>
           </Link>
         </motion.div>
-        
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}>
           <Link href="/documents" className="block">
-            <Card className="border-white/5 bg-card/40 backdrop-blur-md hover:bg-secondary/40 transition-all rounded-3xl cursor-pointer group">
-              <CardContent className="p-6 md:p-8 flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-secondary border border-white/5 flex items-center justify-center text-foreground shadow-inner group-hover:scale-105 transition-transform">
-                    <FileText className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-xl text-foreground mb-1">Document Vault</h3>
-                    <p className="text-sm text-muted-foreground">
-                      <span className="text-foreground font-medium">{summary.documentsComplete}</span> of {summary.documentsTotal} needed files verified
-                    </p>
-                  </div>
+            <div className="pd-card pd-row p-6 md:p-7 flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-5">
+                <div className="pd-tile">
+                  <FileText className="w-7 h-7" />
                 </div>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-secondary/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <ChevronRight className="w-5 h-5" />
+                <div>
+                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>Document Vault</h3>
+                  <p className="text-sm pd-muted">
+                    <span style={{ color: "var(--ink)", fontWeight: 500 }}>{summary.documentsComplete}</span> of {summary.documentsTotal} needed files verified
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="pd-chev">
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </div>
           </Link>
         </motion.div>
       </div>

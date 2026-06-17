@@ -1,6 +1,7 @@
 - [Pepper auth & ownership model](pepper-single-user.md) — multi-user cookie sessions; identity from req.session.userId only; conversation + goals/roadmap/documents scoped by server-owned userId; opportunities stays global. No IDOR exemption.
 - [Pepper trust gate & continuity](pepper-auth-trust-gate.md) — anon chat → auth-required SSE → signup links anon conversation via session.conversationId; connect-pg-simple session table defined in Drizzle so push provisions it.
 - [Pepper voice/SSE contract](pepper-voice-sse.md) — text vs voice SSE event shapes differ; voice returns full mp3 in one event (no worklet).
+- [Pepper guest-transcript auto-purge](pepper-guest-cleanup.md) — hourly job deletes unclaimed (userId IS NULL) convos older than GUEST_RETENTION_HOURS (def 48); claimed convos never touched; messages go via FK cascade.
 - [Pepper redesign constraints](pepper-redesign-constraints.md) — restyling must NOT touch src/pepper/ or break Documents @dnd-kit; use two-phase reference-then-match design delegation.
 - [Pepper coach prompt vs JSON extraction](pepper-coach-prompt.md) — coach spec is a natural-language system prompt; don't force the spec's per-turn JSON output (streaming chat would show raw JSON).
 - [Pepper silent extraction](pepper-silent-extraction.md) — after-turn JSON-only OpenAI pass, never shown in chat; persists to profile+history; aggregate-overwrite risk mitigated via carry-forward prompt.
