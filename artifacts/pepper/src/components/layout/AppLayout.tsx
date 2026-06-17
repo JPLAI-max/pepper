@@ -32,12 +32,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Full-screen takeover screens where the real assistant + document-upload
   // surfaces must be suppressed: the reveal stays a clean takeover, and the
-  // /market & /financing simulation prototypes must not have any real engine
-  // (assistant, document upload) active behind them.
+  // /market, /financing & /capital-markets simulation prototypes must not have
+  // any real engine (assistant, document upload) active behind them.
   const isTakeover =
     location === "/reveal" ||
     location === "/market" ||
-    location === "/financing";
+    location === "/financing" ||
+    location === "/capital-markets";
 
   if (isLoading) {
     return <div className="h-screen w-full flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-8 h-8" /></div>;

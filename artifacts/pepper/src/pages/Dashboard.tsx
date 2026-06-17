@@ -28,6 +28,7 @@ import {
   Lock,
   TrendingUp,
   Landmark,
+  CandlestickChart,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -612,6 +613,36 @@ export default function Dashboard() {
                   </h3>
                   <p className="text-sm pd-muted">
                     Compare loan products matched to your goal
+                    <span className="pd-badge ml-2" style={{ color: "var(--muted)" }}>
+                      Simulation
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="pd-chev">
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
+        >
+          <Link href="/capital-markets" className="block">
+            <div className="pd-card pd-row p-6 md:p-7 flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-5">
+                <div className="pd-tile">
+                  <CandlestickChart className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                    Capital Markets
+                  </h3>
+                  <p className="text-sm pd-muted">
+                    Funding desk, secondary market, and crypto concepts
                     <span className="pd-badge ml-2" style={{ color: "var(--muted)" }}>
                       Simulation
                     </span>
