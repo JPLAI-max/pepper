@@ -30,6 +30,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { label: "Documents", href: "/documents", icon: FileText },
   ];
 
+  // Full-screen takeover screens where the real assistant + document-upload
+  // surfaces must be suppressed: the reveal stays a clean takeover, and the
+  // /market & /financing simulation prototypes must not have any real engine
+  // (assistant, document upload) active behind them.
+  const isTakeover =
+    location === "/reveal" ||
+    location === "/market" ||
+    location === "/financing";
+
   if (isLoading) {
     return <div className="h-screen w-full flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary w-8 h-8" /></div>;
   }
@@ -131,12 +140,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* "Hey Pep" overlay — the assistant surface on authenticated app
-          screens. Suppressed on /reveal so the reveal stays a clean takeover. */}
-      {location !== "/reveal" && <HeyPepOverlay />}
+          screens. Suppressed on full-screen takeover routes (/reveal and the
+          /market & /financing simulations) so no real assistant runs there. */}
+      {!isTakeover && <HeyPepOverlay />}
 
       {/* Page-level drag-and-drop: drop a financial document anywhere to share
-          it with Pepper. Suppressed on /reveal alongside the overlay. */}
-      {location !== "/reveal" && <GlobalDropZone />}
+          it with Pepper. Suppressed on takeover routes alongside the overlay. */}
+      {!isTakeover && <GlobalDropZone />}
     </div>
   );
 }

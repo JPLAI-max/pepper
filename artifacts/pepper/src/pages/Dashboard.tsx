@@ -26,6 +26,8 @@ import {
   Clock,
   AlertTriangle,
   Lock,
+  TrendingUp,
+  Landmark,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -553,6 +555,66 @@ export default function Dashboard() {
                       {summary.documentsComplete}
                     </span>{" "}
                     of {summary.documentsTotal} needed files verified
+                  </p>
+                </div>
+              </div>
+              <div className="pd-chev">
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.4 }}
+        >
+          <Link href="/market" className="block">
+            <div className="pd-card pd-row p-6 md:p-7 flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-5">
+                <div className="pd-tile">
+                  <TrendingUp className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                    Income Units
+                  </h3>
+                  <p className="text-sm pd-muted">
+                    Explore income participation in operated real estate
+                    <span className="pd-badge ml-2" style={{ color: "var(--muted)" }}>
+                      Simulation
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="pd-chev">
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.4 }}
+        >
+          <Link href="/financing" className="block">
+            <div className="pd-card pd-row p-6 md:p-7 flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-5">
+                <div className="pd-tile">
+                  <Landmark className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-xl mb-1" style={{ color: "var(--ink)", fontWeight: 600 }}>
+                    Financing
+                  </h3>
+                  <p className="text-sm pd-muted">
+                    Compare loan products matched to your goal
+                    <span className="pd-badge ml-2" style={{ color: "var(--muted)" }}>
+                      Simulation
+                    </span>
                   </p>
                 </div>
               </div>

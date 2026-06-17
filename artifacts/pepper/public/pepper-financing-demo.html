@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pepper — Financing (Simulation)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0908; --surface:#171210; --card:rgba(28,21,17,.6);
+    --ember:#ff7e3f; --copper:#d8531f; --amber:#ffb454; --gold:#ffd98a; --deep:#5e2410;
+    --ink:#f6ece1; --muted:#a8978a; --faint:#6e6258; --line:rgba(255,180,120,.14);
+    --up:#8fc99a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);
+    background:radial-gradient(120% 70% at 50% 0%, rgba(216,83,31,.1), rgba(216,83,31,0) 50%), linear-gradient(180deg,var(--bg),#070605 60%);
+    min-height:100svh;-webkit-font-smoothing:antialiased}
+  .simbar{position:sticky;top:0;z-index:40;background:repeating-linear-gradient(45deg,rgba(216,83,31,.16),rgba(216,83,31,.16) 12px,rgba(216,83,31,.08) 12px,rgba(216,83,31,.08) 24px);
+    border-bottom:1px solid var(--line);text-align:center;padding:7px 12px;font-size:.72rem;letter-spacing:.08em;color:var(--gold)}
+  .simbar b{color:var(--ink)}
+  header{display:flex;align-items:center;gap:11px;padding:16px 22px;max-width:920px;margin:0 auto}
+  .orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 36% 30%,var(--gold),var(--amber) 18%,var(--ember) 48%,var(--copper) 78%,var(--deep));box-shadow:0 0 14px rgba(255,126,63,.5);animation:breathe 6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .wordmark{font-weight:600;letter-spacing:.15em;font-size:.8rem}
+  main{max-width:920px;margin:0 auto;padding:8px 22px 80px}
+  .view{display:none}.view.on{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:2rem;margin:14px 0 4px}
+  .subtitle{color:var(--muted);margin-bottom:22px;font-size:.96rem}
+  .back{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;margin:6px 0 14px;padding:0}
+  .back:hover{color:var(--ink)}
+  .products{display:flex;flex-direction:column;gap:12px}
+  .product{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;cursor:pointer;transition:border-color .15s,transform .15s}
+  .product:hover{border-color:color-mix(in srgb,var(--ember) 40%,transparent);transform:translateY(-1px)}
+  .product .name{font-weight:600}
+  .product .for{color:var(--muted);font-size:.84rem;margin-top:3px}
+  .product .rate{font-family:'Fraunces',serif;font-size:1.4rem;text-align:right}
+  .product .rate small{display:block;font-family:'Inter';font-size:.72rem;color:var(--muted);font-weight:400}
+  .product .arrow{color:var(--muted)}
+  .match{display:inline-block;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 35%,transparent);border-radius:999px;padding:3px 9px;margin-top:8px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:14px}
+  .offers .offer{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .offers .offer:last-child{border-bottom:none}
+  .offer .lender{font-weight:600}
+  .offer .meta{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .offer .col{text-align:right}
+  .offer .col .k{font-size:.72rem;color:var(--muted)}
+  .offer .col .v{font-family:'Fraunces',serif;font-size:1.05rem}
+  .offer .pick{border:none;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,var(--amber),var(--ember));color:#3a1606}
+  .offer.best{background:color-mix(in srgb,var(--gold) 8%,transparent);margin:0 -12px;padding:16px 12px;border-radius:12px;border-bottom:none}
+  .best-tag{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
+  .tie{margin:8px 0 18px;font-size:.85rem;color:var(--gold);display:flex;align-items:center;gap:7px}
+  .terms{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+  .terms .stat .k{font-size:.74rem;color:var(--muted);margin-bottom:4px}
+  .terms .stat .v{font-family:'Fraunces',serif;font-size:1.3rem}
+  .stepper{display:flex;align-items:center;margin:24px 0}
+  .step{flex:1;text-align:center;position:relative}
+  .step .dot{width:26px;height:26px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;background:var(--surface);border:2px solid var(--line);font-size:.8rem;color:var(--muted)}
+  .step.done .dot{background:linear-gradient(180deg,var(--amber),var(--ember));border-color:transparent;color:#3a1606}
+  .step.active .dot{border-color:var(--ember);color:var(--ember)}
+  .step .lbl{font-size:.78rem;color:var(--muted)}
+  .step.done .lbl,.step.active .lbl{color:var(--ink)}
+  .step:not(:last-child)::after{content:"";position:absolute;top:13px;left:60%;right:-40%;height:2px;background:var(--line)}
+  .step.done:not(:last-child)::after{background:var(--ember)}
+  .apply{width:100%;border:none;border-radius:12px;padding:15px;font-weight:600;font-size:1rem;cursor:pointer;background:linear-gradient(180deg,var(--amber),var(--ember));color:#3a1606;transition:transform .15s}
+  .apply:hover{transform:translateY(-1px)}
+  .statusmsg{text-align:center;color:var(--muted);font-size:.9rem;margin-top:14px}
+  .disclaim{margin-top:30px;color:var(--faint);font-size:.76rem;line-height:1.6;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+  <div class="simbar"><b>SIMULATION</b> — prototype for legal review. No real loan offers, no application, no lender commitment. Illustrative rates only.</div>
+  <header><div class="orb"></div><div class="wordmark">PEPPER</div></header>
+  <main>
+    <section class="view on" id="v-products">
+      <h1 class="title">Financing</h1>
+      <div class="subtitle">Matched to your goal and profile. Each product opens to competing lender offers.</div>
+      <div class="products" id="productList"></div>
+      <div class="disclaim" id="disc1"></div>
+    </section>
+    <section class="view" id="v-offers">
+      <button class="back" id="backToProducts">← Back to financing</button>
+      <h1 class="title" id="o-name" style="margin:0"></h1>
+      <div class="subtitle" id="o-for" style="margin:4px 0 14px"></div>
+      <div class="tie">◆ Executes your roadmap step: <span id="o-step" style="margin-left:4px"></span></div>
+      <div class="panel offers" id="offersList"></div>
+      <div class="disclaim" id="disc2"></div>
+    </section>
+    <section class="view" id="v-apply">
+      <button class="back" id="backToOffers">← Back to offers</button>
+      <h1 class="title" id="a-lender" style="margin:0 0 4px"></h1>
+      <div class="subtitle" id="a-prod" style="margin-bottom:18px"></div>
+      <div class="panel">
+        <div class="terms" id="a-terms"></div>
+        <div class="stepper" id="a-stepper"></div>
+        <button class="apply" id="applyBtn">Submit application</button>
+        <div class="statusmsg" id="a-status"></div>
+      </div>
+      <div class="disclaim" id="disc3"></div>
+    </section>
+  </main>
+<script>
+  const DISCLAIM = "Simulation only. Loan products, rates, lenders, offers, and application statuses are illustrative and do not represent real loan terms, a real application, an approval, or any lender commitment. No application is submitted and no credit is pulled. Built as a prototype to illustrate the financing-marketplace model for legal review.";
+  ['disc1','disc2','disc3'].forEach(id=>document.getElementById(id).textContent=DISCLAIM);
+  const PRODUCTS = [
+    { id:"fha", name:"FHA Loan", for:"First home · lower down payment", rate:"6.4%", note:"30-yr fixed", match:true, step:"Buy your first home", offers:[
+      { lender:"Cornerstone Lending", rate:"6.35%", term:"30-yr fixed", pay:"$1,612/mo", best:true },
+      { lender:"Anchor Home Loans", rate:"6.50%", term:"30-yr fixed", pay:"$1,640/mo" },
+      { lender:"Beacon Mortgage", rate:"6.55%", term:"30-yr fixed", pay:"$1,650/mo" },
+    ]},
+    { id:"conv", name:"Conventional Mortgage", for:"Strong credit · standard purchase", rate:"6.6%", note:"30-yr fixed", match:false, step:"Buy your first home", offers:[
+      { lender:"Anchor Home Loans", rate:"6.55%", term:"30-yr fixed", pay:"$1,710/mo", best:true },
+      { lender:"Summit Financial", rate:"6.70%", term:"30-yr fixed", pay:"$1,735/mo" },
+    ]},
+    { id:"dscr", name:"DSCR Loan", for:"Rental property · cash-flow qualified", rate:"7.3%", note:"Investor", match:false, step:"Buy a rental property", offers:[
+      { lender:"Meridian Capital", rate:"7.25%", term:"30-yr · I/O option", pay:"$1,510/mo", best:true },
+      { lender:"Keystone Investor Lending", rate:"7.45%", term:"30-yr fixed", pay:"$1,560/mo" },
+    ]},
+    { id:"heloc", name:"HELOC", for:"Tap existing home equity", rate:"8.1%", note:"Variable", match:false, step:"Access equity", offers:[
+      { lender:"Cornerstone Lending", rate:"8.00%", term:"10-yr draw", pay:"Interest-only", best:true },
+      { lender:"Harbor Credit Union", rate:"8.20%", term:"10-yr draw", pay:"Interest-only" },
+    ]},
+  ];
+  let curProduct=null, curOffer=null;
+  function renderProducts(){ document.getElementById('productList').innerHTML = PRODUCTS.map(p=>`<div class="product" data-id="${p.id}"><div><div class="name">${p.name}</div><div class="for">${p.for}</div>${p.match?'<span class="match">◆ Best fit for you</span>':''}</div><div class="rate">${p.rate}<small>from · ${p.note}</small></div><div class="arrow">→</div></div>`).join(''); document.querySelectorAll('.product').forEach(el=>el.onclick=()=>openOffers(el.dataset.id)); }
+  function openOffers(id){ curProduct = PRODUCTS.find(p=>p.id===id); document.getElementById('o-name').textContent = curProduct.name; document.getElementById('o-for').textContent = curProduct.for; document.getElementById('o-step').textContent = curProduct.step; document.getElementById('offersList').innerHTML = curProduct.offers.map((o,i)=>`<div class="offer ${o.best?'best':''}" data-i="${i}"><div><div class="lender">${o.lender}${o.best?' <span class="best-tag">· best rate</span>':''}</div><div class="meta">${o.term}</div></div><div class="col"><div class="k">Rate</div><div class="v">${o.rate}</div></div><div class="col"><div class="k">Est. payment</div><div class="v">${o.pay}</div></div><button class="pick" data-i="${i}">Select</button></div>`).join(''); document.querySelectorAll('#offersList .pick').forEach(b=>b.onclick=()=>openApply(parseInt(b.dataset.i))); show('offers'); }
+  function openApply(i){ curOffer = curProduct.offers[i]; document.getElementById('a-lender').textContent = curOffer.lender; document.getElementById('a-prod').textContent = curProduct.name + " · " + curOffer.term; document.getElementById('a-terms').innerHTML = `<div class="stat"><div class="k">Rate</div><div class="v">${curOffer.rate}</div></div><div class="stat"><div class="k">Term</div><div class="v">${curOffer.term}</div></div><div class="stat"><div class="k">Est. payment</div><div class="v">${curOffer.pay}</div></div>`; setStep(0); document.getElementById('a-status').textContent=''; document.getElementById('applyBtn').textContent='Submit application'; document.getElementById('applyBtn').disabled=false; show('apply'); }
+  const STEPS=["Submitted","Underwriting","Decision"];
+  function setStep(active){ document.getElementById('a-stepper').innerHTML = STEPS.map((s,i)=>`<div class="step ${i<active?'done':''} ${i===active?'active':''}"><div class="dot">${i<active?'✓':i+1}</div><div class="lbl">${s}</div></div>`).join(''); }
+  document.getElementById('applyBtn').onclick=()=>{ const btn=document.getElementById('applyBtn'); btn.disabled=true; btn.textContent='Application submitted (simulated)'; const st=document.getElementById('a-status'); setStep(1); st.textContent='In underwriting…'; setTimeout(()=>{ setStep(2); document.querySelector('#a-stepper .step:last-child').classList.add('done'); st.innerHTML='<span style="color:var(--up)">Conditionally approved (simulated)</span>'; }, 1600); };
+  document.getElementById('backToProducts').onclick=()=>show('products');
+  document.getElementById('backToOffers').onclick=()=>openOffers(curProduct.id);
+  function show(v){ document.querySelectorAll('.view').forEach(x=>x.classList.remove('on')); document.getElementById('v-'+v).classList.add('on'); window.scrollTo(0,0); }
+  renderProducts();
+</script>
+</body>
+</html>

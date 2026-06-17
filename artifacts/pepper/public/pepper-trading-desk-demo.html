@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pepper — Income Units (Simulation)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0908; --surface:#171210; --card:rgba(28,21,17,.6);
+    --ember:#ff7e3f; --copper:#d8531f; --amber:#ffb454; --gold:#ffd98a; --deep:#5e2410;
+    --ink:#f6ece1; --muted:#a8978a; --faint:#6e6258; --line:rgba(255,180,120,.14);
+    --up:#8fc99a; --down:#e08a6a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);
+    background:radial-gradient(120% 70% at 50% 0%, rgba(216,83,31,.1), rgba(216,83,31,0) 50%), linear-gradient(180deg,var(--bg),#070605 60%);
+    min-height:100svh;-webkit-font-smoothing:antialiased}
+  .simbar{position:sticky;top:0;z-index:40;background:repeating-linear-gradient(45deg,rgba(216,83,31,.16),rgba(216,83,31,.16) 12px,rgba(216,83,31,.08) 12px,rgba(216,83,31,.08) 24px);
+    border-bottom:1px solid var(--line);text-align:center;padding:7px 12px;font-size:.72rem;letter-spacing:.08em;color:var(--gold)}
+  .simbar b{color:var(--ink)}
+  header{display:flex;align-items:center;gap:11px;padding:16px 22px;max-width:1000px;margin:0 auto}
+  .orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 36% 30%,var(--gold),var(--amber) 18%,var(--ember) 48%,var(--copper) 78%,var(--deep));box-shadow:0 0 14px rgba(255,126,63,.5);animation:breathe 6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .wordmark{font-weight:600;letter-spacing:.15em;font-size:.8rem}
+  .tabs{margin-left:auto;display:flex;gap:6px}
+  .tabs button{background:none;border:1px solid transparent;color:var(--muted);font-size:.86rem;padding:7px 14px;border-radius:999px;cursor:pointer}
+  .tabs button.on{color:var(--ink);border-color:var(--line);background:var(--card)}
+  main{max-width:1000px;margin:0 auto;padding:8px 22px 80px}
+  .view{display:none}.view.on{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1.title{font-family:'Fraunces',serif;font-weight:300;font-size:2rem;margin:14px 0 4px}
+  .subtitle{color:var(--muted);margin-bottom:22px;font-size:.96rem}
+  .market{display:flex;flex-direction:column;gap:11px}
+  .unit{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 20px;cursor:pointer;transition:border-color .15s ease,transform .15s ease}
+  .unit:hover{border-color:color-mix(in srgb,var(--ember) 40%,transparent);transform:translateY(-1px)}
+  .unit .name{font-weight:600}
+  .unit .loc{color:var(--muted);font-size:.84rem;margin-top:2px}
+  .unit .spark{width:90px;height:34px}
+  .unit .price{font-family:'Fraunces',serif;font-size:1.25rem;text-align:right}
+  .unit .chg{font-size:.85rem;text-align:right;min-width:64px}
+  .up{color:var(--up)}.down{color:var(--down)}
+  .unit .yield{font-size:.8rem;color:var(--gold);text-align:right}
+  .back{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;margin:6px 0 14px;padding:0}
+  .back:hover{color:var(--ink)}
+  .detail-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:18px}
+  .detail-head .px{font-family:'Fraunces',serif;font-size:2.4rem}
+  .detail-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+  @media(max-width:760px){.detail-grid{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+  .chart{width:100%;height:200px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+  .stat .k{font-size:.76rem;color:var(--muted);margin-bottom:4px}
+  .stat .v{font-family:'Fraunces',serif;font-size:1.2rem}
+  .tie{margin-top:16px;font-size:.85rem;color:var(--gold);display:flex;align-items:center;gap:7px}
+  .ticket h3{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .bs{display:flex;gap:8px;margin-bottom:16px}
+  .bs button{flex:1;padding:11px;border-radius:11px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;font-weight:600}
+  .bs button.buy.on{background:color-mix(in srgb,var(--up) 25%,transparent);border-color:var(--up);color:var(--ink)}
+  .bs button.sell.on{background:color-mix(in srgb,var(--down) 22%,transparent);border-color:var(--down);color:var(--ink)}
+  .qty{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:11px;padding:13px 15px;color:var(--ink);font-size:1.05rem;outline:none;margin-bottom:12px}
+  .estrow{display:flex;justify-content:space-between;color:var(--muted);font-size:.92rem;margin-bottom:6px}
+  .estrow b{color:var(--ink);font-family:'Fraunces',serif}
+  .place{width:100%;border:none;border-radius:12px;padding:14px;font-weight:600;font-size:1rem;cursor:pointer;margin-top:12px;background:linear-gradient(180deg,var(--amber),var(--ember));color:#3a1606;transition:transform .15s ease}
+  .place:hover{transform:translateY(-1px)}
+  .toast{margin-top:12px;font-size:.86rem;color:var(--up);text-align:center;min-height:1.1em}
+  .book{margin-top:16px}
+  .book h3{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .bookrow{display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0;font-variant-numeric:tabular-nums}
+  .bookrow .ask{color:var(--down)} .bookrow .bid{color:var(--up)}
+  .bookrow .depth{color:var(--faint)}
+  .pf-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+  .pf-summary .panel .k{font-size:.78rem;color:var(--muted);margin-bottom:6px}
+  .pf-summary .panel .v{font-family:'Fraunces',serif;font-size:1.7rem}
+  .holding{display:grid;grid-template-columns:1fr auto auto auto;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:10px}
+  .holding .name{font-weight:600}.holding .sub{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .holding .val{font-family:'Fraunces',serif;font-size:1.1rem;text-align:right}
+  .holding .g{font-size:.84rem;text-align:right}
+  .disclaim{margin-top:30px;color:var(--faint);font-size:.76rem;line-height:1.6;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+  <div class="simbar"><b>SIMULATION</b> — prototype for legal review. No real securities, no real money, no live offering. Illustrative data only.</div>
+  <header>
+    <div class="orb"></div><div class="wordmark">PEPPER</div>
+    <div class="tabs">
+      <button class="on" data-tab="market" id="t-market">Market</button>
+      <button data-tab="portfolio" id="t-portfolio">Portfolio</button>
+    </div>
+  </header>
+  <main>
+    <section class="view on" id="v-market">
+      <h1 class="title">Property Income Units</h1>
+      <div class="subtitle">Income participation in operated real estate. Illustrative secondary market.</div>
+      <div class="market" id="marketList"></div>
+      <div class="disclaim" id="disc1"></div>
+    </section>
+    <section class="view" id="v-detail">
+      <button class="back" id="backBtn">← Back to market</button>
+      <div class="detail-head">
+        <div><h1 class="title" id="d-name" style="margin:0"></h1><div class="subtitle" id="d-loc" style="margin:4px 0 0"></div></div>
+        <div style="text-align:right"><div class="px" id="d-price"></div><div id="d-chg"></div></div>
+      </div>
+      <div class="detail-grid">
+        <div class="panel">
+          <svg class="chart" id="d-chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+          <div class="stats" id="d-stats"></div>
+          <div class="tie">◆ Advances your Passive Income goal</div>
+        </div>
+        <div>
+          <div class="panel ticket">
+            <h3>Order ticket</h3>
+            <div class="bs"><button class="buy on" id="b-buy">Buy</button><button class="sell" id="b-sell">Sell</button></div>
+            <input class="qty" id="qty" type="number" min="1" value="10">
+            <div class="estrow"><span>Price / unit</span><b id="e-price"></b></div>
+            <div class="estrow"><span>Estimated total</span><b id="e-total"></b></div>
+            <button class="place" id="placeBtn">Place order</button>
+            <div class="toast" id="toast"></div>
+          </div>
+          <div class="panel book"><h3>Order book</h3><div id="bookEl"></div></div>
+        </div>
+      </div>
+    </section>
+    <section class="view" id="v-portfolio">
+      <h1 class="title">Your Units</h1>
+      <div class="subtitle">Illustrative holdings and income.</div>
+      <div class="pf-summary" id="pfSummary"></div>
+      <div id="pfHoldings"></div>
+      <div class="disclaim" id="disc2"></div>
+    </section>
+  </main>
+<script>
+  const DISCLAIM = "Simulation only. Property Income Units, prices, yields, order book, and holdings shown are illustrative and do not represent a real security, a real offering, or an obligation. No money moves and nothing is tradeable. Built as a prototype to illustrate product scope for legal review.";
+  document.getElementById('disc1').textContent = DISCLAIM;
+  document.getElementById('disc2').textContent = DISCLAIM;
+  function hist(seed, base){ let v=base, out=[]; for(let i=0;i<40;i++){ v += (Math.sin(seed+i*0.6)+ (Math.random()-0.5))*base*0.012; out.push(Math.max(base*0.8, v)); } return out; }
+  const UNITS = [
+    { id:"MPL", name:"Maple Court Triplex", loc:"Austin, TX", price:48.20, chg:+1.2, yield:7.4, occ:"96%", units:"3 doors", nav:"$1.44M" },
+    { id:"RIV", name:"Riverside Apartments", loc:"Phoenix, AZ", price:63.10, chg:-0.4, yield:6.8, occ:"94%", units:"18 doors", nav:"$6.10M" },
+    { id:"OAK", name:"Oakwood Duplex", loc:"Nashville, TN", price:31.75, chg:+2.3, yield:8.1, occ:"100%", units:"2 doors", nav:"$0.79M" },
+    { id:"HBR", name:"Harbor View Lofts", loc:"Tampa, FL", price:89.40, chg:+0.6, yield:6.2, occ:"98%", units:"12 doors", nav:"$5.30M" },
+    { id:"SUN", name:"Sunset Bungalows", loc:"San Antonio, TX", price:27.90, chg:+0.9, yield:8.6, occ:"92%", units:"6 doors", nav:"$1.02M" },
+    { id:"CDR", name:"Cedar Park Homes", loc:"Raleigh, NC", price:54.00, chg:-1.1, yield:7.0, occ:"97%", units:"5 doors", nav:"$2.20M" },
+  ];
+  UNITS.forEach((u,i)=> u.series = hist(i*3+1, u.price));
+  let portfolio = { MPL:{shares:40}, OAK:{shares:120} };
+  function spark(series, w=90, h=34){ const min=Math.min(...series), max=Math.max(...series), rng=(max-min)||1; const pts = series.map((v,i)=>`${(i/(series.length-1))*w},${h-((v-min)/rng)*h}`).join(' '); const up = series[series.length-1]>=series[0]; return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${up?'var(--up)':'var(--down)'}" stroke-width="1.6"/></svg>`; }
+  function bigChart(series){ const w=600,h=200, min=Math.min(...series), max=Math.max(...series), rng=(max-min)||1; const pts = series.map((v,i)=>`${(i/(series.length-1))*w},${h-((v-min)/rng)*(h-20)-10}`).join(' '); const up = series[series.length-1]>=series[0]; const col = up?'var(--up)':'var(--down)'; return `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".25"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${h} ${pts} ${w},${h}" fill="url(#g)"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/>`; }
+  const money = n => "$"+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  function renderMarket(){ document.getElementById('marketList').innerHTML = UNITS.map(u=>`<div class="unit" data-id="${u.id}"><div><div class="name">${u.name}</div><div class="loc">${u.loc} · ${u.units}</div></div>${spark(u.series)}<div><div class="price">${money(u.price)}</div><div class="yield">${u.yield}% yield</div></div><div class="chg ${u.chg>=0?'up':'down'}">${u.chg>=0?'▲':'▼'} ${Math.abs(u.chg)}%</div></div>`).join(''); document.querySelectorAll('.unit').forEach(el=> el.onclick=()=>openDetail(el.dataset.id)); }
+  let current=null, side='buy';
+  function openDetail(id){ current = UNITS.find(u=>u.id===id); document.getElementById('d-name').textContent = current.name; document.getElementById('d-loc').textContent = current.loc + " · " + current.units; document.getElementById('d-price').textContent = money(current.price); document.getElementById('d-chg').className = current.chg>=0?'up':'down'; document.getElementById('d-chg').textContent = (current.chg>=0?'▲ ':'▼ ')+Math.abs(current.chg)+"% today"; document.getElementById('d-chart').innerHTML = bigChart(current.series); document.getElementById('d-stats').innerHTML = `<div class="stat"><div class="k">Annual yield</div><div class="v">${current.yield}%</div></div><div class="stat"><div class="k">Occupancy</div><div class="v">${current.occ}</div></div><div class="stat"><div class="k">Property value</div><div class="v">${current.nav}</div></div><div class="stat"><div class="k">Min. units</div><div class="v">1</div></div>`; renderBook(); updateEst(); show('detail'); }
+  function renderBook(){ let rows=''; const p=current.price; for(let i=3;i>=1;i--) rows+=`<div class="bookrow"><span class="ask">${money(p+ i*0.15)}</span><span class="depth">${(Math.random()*900+100|0)} units</span></div>`; rows+=`<div class="bookrow" style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px 0;margin:4px 0"><b>${money(p)}</b><span class="depth">last</span></div>`; for(let i=1;i<=3;i++) rows+=`<div class="bookrow"><span class="bid">${money(p- i*0.15)}</span><span class="depth">${(Math.random()*900+100|0)} units</span></div>`; document.getElementById('bookEl').innerHTML = rows; }
+  function updateEst(){ const q = Math.max(0, parseInt(document.getElementById('qty').value)||0); document.getElementById('e-price').textContent = money(current.price); document.getElementById('e-total').textContent = money(current.price*q); }
+  document.getElementById('qty').addEventListener('input', updateEst);
+  document.getElementById('b-buy').onclick=()=>{side='buy';document.getElementById('b-buy').classList.add('on');document.getElementById('b-sell').classList.remove('on');};
+  document.getElementById('b-sell').onclick=()=>{side='sell';document.getElementById('b-sell').classList.add('on');document.getElementById('b-buy').classList.remove('on');};
+  document.getElementById('placeBtn').onclick=()=>{ const q = Math.max(0, parseInt(document.getElementById('qty').value)||0); if(!q) return; if(!portfolio[current.id]) portfolio[current.id]={shares:0}; portfolio[current.id].shares += side==='buy'? q : -q; if(portfolio[current.id].shares<=0) delete portfolio[current.id]; const t=document.getElementById('toast'); t.textContent = `Simulated ${side} of ${q} ${current.name} units recorded.`; setTimeout(()=>t.textContent='',3500); renderPortfolio(); };
+  document.getElementById('backBtn').onclick=()=>show('market');
+  function renderPortfolio(){ const ids=Object.keys(portfolio); let total=0, income=0; const rows = ids.map(id=>{ const u=UNITS.find(x=>x.id===id), sh=portfolio[id].shares, val=u.price*sh; total+=val; income += val*(u.yield/100); const g=u.chg; return `<div class="holding"><div><div class="name">${u.name}</div><div class="sub">${sh} units · ${u.loc}</div></div><div class="yield" style="color:var(--gold);font-size:.82rem">${u.yield}%</div><div class="val">${money(val)}</div><div class="g ${g>=0?'up':'down'}">${g>=0?'▲':'▼'} ${Math.abs(g)}%</div></div>`; }).join('') || `<div class="subtitle">No units yet — open one from the market to simulate a position.</div>`; document.getElementById('pfHoldings').innerHTML = rows; document.getElementById('pfSummary').innerHTML = `<div class="panel"><div class="k">Portfolio value</div><div class="v">${money(total)}</div></div><div class="panel"><div class="k">Est. annual income</div><div class="v" style="color:var(--gold)">${money(income)}</div></div><div class="panel"><div class="k">Positions</div><div class="v">${ids.length}</div></div>`; }
+  function show(tab){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('on')); document.getElementById('v-'+(tab==='detail'?'detail':tab)).classList.add('on'); document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab)); if(tab==='portfolio') renderPortfolio(); window.scrollTo(0,0); }
+  document.getElementById('t-market').onclick=()=>show('market');
+  document.getElementById('t-portfolio').onclick=()=>show('portfolio');
+  renderMarket();
+</script>
+</body>
+</html>

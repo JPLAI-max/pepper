@@ -22,6 +22,8 @@ import Documents from "@/pages/Documents";
 import Opportunities from "@/pages/Opportunities";
 import Reveal from "@/pages/Reveal";
 import Privacy from "@/pages/Privacy";
+import Market from "@/pages/Market";
+import Financing from "@/pages/Financing";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +135,12 @@ function Router() {
       <Route path="/reveal">
         <ProtectedRoute component={Reveal} path="/reveal" />
       </Route>
+      <Route path="/market">
+        <ProtectedRoute component={Market} path="/market" />
+      </Route>
+      <Route path="/financing">
+        <ProtectedRoute component={Financing} path="/financing" />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -148,6 +156,8 @@ const APP_SHELL_ROUTES = [
   "/opportunities",
   "/documents",
   "/reveal",
+  "/market",
+  "/financing",
 ];
 
 function GlobalAssistant() {
