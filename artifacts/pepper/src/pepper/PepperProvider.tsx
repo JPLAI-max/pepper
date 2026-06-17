@@ -17,6 +17,7 @@ import {
   getGetOpportunityMatchesQueryKey,
 } from "@workspace/api-client-react";
 import type {
+  AmbientCaptureHandlers,
   PepperContextValue,
   PepperMessage,
   PepperStatus,
@@ -28,6 +29,7 @@ import type {
 const API_BASE = "/api";
 const STORAGE_CONV = "pepper.conversationId";
 const STORAGE_VOICE = "pepper.voice";
+const STORAGE_MUTED = "pepper.speechMuted";
 
 const PepperContext = createContext<PepperContextValue | null>(null);
 
@@ -123,6 +125,14 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   const [dictating, setDictating] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
   const [tour, setTour] = useState<TourState | null>(null);
+  const [ambient, setAmbient] = useState(false);
+  const [speechMuted, setSpeechMutedState] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_MUTED) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const clearAuthRequired = useCallback(() => setAuthRequired(false), []);
 
@@ -130,6 +140,8 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   const conversationPromiseRef = useRef<Promise<number> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const ambientRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const openAmbientRef = useRef<() => void>(() => {});
   const dictationRecorderRef = useRef<MediaRecorder | null>(null);
   const dictationChunksRef = useRef<Blob[]>([]);
   const startListeningRef = useRef<() => Promise<void>>(async () => {});
@@ -146,6 +158,138 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
+  }, []);
+
+  // ===== Ambient "Hey Pep" layer + browser spoken replies =====
+
+  const cancelSpeech = useCallback(() => {
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setSpeechMuted = useCallback(
+    (muted: boolean) => {
+      setSpeechMutedState(muted);
+      try {
+        localStorage.setItem(STORAGE_MUTED, muted ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      if (muted) cancelSpeech();
+    },
+    [cancelSpeech],
+  );
+
+  // Speak via the browser Web Speech API. Honors the male/female voice
+  // preference when a matching system voice exists, otherwise the default.
+  // No-op (but still runs onEnd) when muted or unsupported, so callers can
+  // chain the next step regardless.
+  const speak = useCallback(
+    (text: string, opts?: { onEnd?: () => void }) => {
+      const synth =
+        typeof window !== "undefined" ? window.speechSynthesis : undefined;
+      const trimmed = text.trim();
+      if (speechMuted || !synth || !trimmed) {
+        opts?.onEnd?.();
+        return;
+      }
+      synth.cancel();
+      const utter = new SpeechSynthesisUtterance(trimmed);
+      utter.rate = 1;
+      utter.pitch = 1;
+      try {
+        const voices = synth.getVoices();
+        if (voices.length) {
+          const en = voices.filter((v) => /^en/i.test(v.lang));
+          const pool = en.length ? en : voices;
+          const wantMale = voice === "male";
+          const femaleRe =
+            /\b(female|woman|samantha|victoria|karen|moira|tessa|fiona|zira|susan|allison|ava|serena|joanna)\b/i;
+          const maleRe =
+            /\b(male|man|daniel|alex|fred|tom|james|john|guy|david|mark|oliver)\b/i;
+          const match = pool.find((v) =>
+            wantMale
+              ? maleRe.test(v.name) && !femaleRe.test(v.name)
+              : femaleRe.test(v.name),
+          );
+          if (match) utter.voice = match;
+        }
+      } catch {
+        /* fall back to the default voice */
+      }
+      if (opts?.onEnd) utter.onend = () => opts.onEnd?.();
+      synth.speak(utter);
+    },
+    [speechMuted, voice],
+  );
+
+  const openAmbient = useCallback(() => {
+    setAmbient(true);
+  }, []);
+  // Latest openAmbient for the wake-word effect (avoids a stale closure).
+  useEffect(() => {
+    openAmbientRef.current = openAmbient;
+  }, [openAmbient]);
+
+  const closeAmbient = useCallback(() => {
+    setAmbient(false);
+    cancelSpeech();
+    try {
+      ambientRecognitionRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
+    ambientRecognitionRef.current = null;
+  }, [cancelSpeech]);
+
+  // Capture one spoken command for the ambient layer via the browser
+  // SpeechRecognition API. Returns a stop function.
+  const captureCommand = useCallback((handlers: AmbientCaptureHandlers) => {
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) {
+      handlers.onEnd?.();
+      return () => {};
+    }
+    const recognition = new Ctor();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    let finalText = "";
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      for (const result of Array.from(event.results) as any[]) {
+        const txt = result[0]?.transcript ?? "";
+        if (result.isFinal) finalText += txt;
+        else interim += txt;
+      }
+      const live = (finalText + " " + interim).trim();
+      if (live) handlers.onInterim?.(live);
+    };
+    recognition.onerror = () => {};
+    recognition.onend = () => {
+      if (ambientRecognitionRef.current === recognition) {
+        ambientRecognitionRef.current = null;
+      }
+      const t = finalText.trim();
+      if (t) handlers.onFinal(t);
+      handlers.onEnd?.();
+    };
+    ambientRecognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch {
+      /* ignore */
+    }
+    return () => {
+      try {
+        recognition.stop();
+      } catch {
+        /* ignore */
+      }
+    };
   }, []);
 
   const ensureConversation = useCallback(async (): Promise<number> => {
@@ -268,6 +412,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       setStatus("thinking");
       let navigate: string | undefined;
       let tourStops: TourStop[] | undefined;
+      let assistantText = "";
       try {
         await streamSSE(
           `${API_BASE}/openai/conversations/${id}/messages`,
@@ -294,6 +439,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
               tourStops = (event.tour as { stops: TourStop[] }).stops;
             }
             if (typeof event.content === "string") {
+              assistantText += event.content;
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
@@ -331,7 +477,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         void queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetOpportunityMatchesQueryKey() });
       }
-      return { navigate, tour: tourStops };
+      return { navigate, tour: tourStops, reply: assistantText.trim() || undefined };
     },
     [busy, ensureConversation, queryClient],
   );
@@ -511,7 +657,10 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!wakeWordEnabled) {
+    // Pause the wake-word listener while the ambient layer is open: the ambient
+    // command capture uses the same SpeechRecognition API, and only one
+    // recognition session can run at a time.
+    if (!wakeWordEnabled || ambient) {
       recognitionRef.current?.stop();
       recognitionRef.current = null;
       return;
@@ -529,8 +678,9 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         .toLowerCase();
       if (/\bhey\s+pep(per)?\b/.test(transcript)) {
         recognition.stop();
-        setOpen(true);
-        void startListeningRef.current();
+        // Open the self-contained ambient layer (background + orb only). This
+        // never changes the route or mounts the landing page.
+        openAmbientRef.current();
       }
     };
     recognition.onerror = () => {};
@@ -556,7 +706,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       recognition.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wakeWordEnabled]);
+  }, [wakeWordEnabled, ambient]);
 
   const reset = useCallback(async () => {
     stopSpeaking();
@@ -598,6 +748,14 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     reset,
     authRequired,
     clearAuthRequired,
+    ambient,
+    openAmbient,
+    closeAmbient,
+    speechMuted,
+    setSpeechMuted,
+    speak,
+    cancelSpeech,
+    captureCommand,
   };
 
   return (

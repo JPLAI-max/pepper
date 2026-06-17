@@ -25,6 +25,16 @@ export interface TourState {
   index: number;
 }
 
+/** Callbacks for a single ambient ("Hey Pep") spoken-command capture. */
+export interface AmbientCaptureHandlers {
+  /** Partial/interim transcript as the user speaks. */
+  onInterim?: (text: string) => void;
+  /** Final transcript once the user finishes speaking. */
+  onFinal: (text: string) => void;
+  /** Recognition ended (with or without a final result). */
+  onEnd?: () => void;
+}
+
 export interface PepperContextValue {
   /** Whether the global Pepper panel is open. */
   open: boolean;
@@ -49,7 +59,7 @@ export interface PepperContextValue {
   sendText: (
     content: string,
     opts?: { mode?: "overlay"; section?: string; commit?: boolean },
-  ) => Promise<{ navigate?: string; tour?: TourStop[] }>;
+  ) => Promise<{ navigate?: string; tour?: TourStop[]; reply?: string }>;
 
   /**
    * Guided demo tour. `tour` is non-null while a walkthrough is active. The
@@ -83,6 +93,31 @@ export interface PepperContextValue {
   dictateStop: () => Promise<string>;
   /** True while a dictation recording is active. */
   dictating: boolean;
+
+  /**
+   * Ambient "Hey Pep" layer. A self-contained full-screen surface (background +
+   * breathing orb only) shown over the current route on wake — it never changes
+   * the route or mounts the landing page, so dismissing returns to exactly where
+   * the user was.
+   */
+  ambient: boolean;
+  /** Show the ambient layer (called by the wake word). Does not navigate. */
+  openAmbient: () => void;
+  /** Hide the ambient layer and cancel any in-progress speech. */
+  closeAmbient: () => void;
+
+  /** Whether spoken replies (Web Speech) are muted. Persisted. */
+  speechMuted: boolean;
+  setSpeechMuted: (muted: boolean) => void;
+  /** Speak text via the browser Web Speech API (no-op when muted). */
+  speak: (text: string, opts?: { onEnd?: () => void }) => void;
+  /** Cancel any in-progress browser speech. */
+  cancelSpeech: () => void;
+  /**
+   * Capture a single spoken command via the browser SpeechRecognition API for
+   * the ambient layer. Returns a stop function. Used only while ambient is open.
+   */
+  captureCommand: (handlers: AmbientCaptureHandlers) => () => void;
 
   /** Clear the current conversation and start fresh. */
   reset: () => Promise<void>;
