@@ -18,14 +18,30 @@ pepper-coach-prompt.md). Instead the route is resolved by a dedicated JSON-only
 OpenAI call, gated behind a cheap deterministic `mightBeNavigation()` regex so
 non-nav overlay turns (explain/dictation) skip the extra call entirely.
 
+**Nav/tour runs on EVERY coach turn + short-circuits the coach (current model).**
+`classifyOverlayIntent(content)` runs for ALL `/messages` turns — the main landing
+chat AND the overlay — not overlay-only. When it resolves a navigate OR tour, the
+server SHORT-CIRCUITS *before* the coach LLM: persist the user msg, emit a
+deterministic `{content}` reply from `navConfirmationReply(intent)`, persist it as
+the assistant msg, emit `{tour:{stops}}` or `{navigate}`, then `{done}`, return.
+**Why:** an explicit nav/tour command is navigation, not an advice request — going
+through the coach risked the "not-a-licensed-advisor" refusal. Short-circuiting
+guarantees it never reaches that guardrail (and is faster). Consequence: nav/tour
+turns no longer pass `navigateTo/tour` into `buildCoachContext` (that confirm-by-
+name path is now dead for nav; the coach still HAS the blocks for legacy callers).
+
 **How to apply / contracts:**
-- Server (text route only, overlay turns): resolve `navigateTo`, pass it into
-  `buildCoachContext` (so the reply confirms by name), and emit a RAW SSE event
-  `{navigate:"/x"}` BEFORE `{done:true}` in the overlay branch. It's a raw SSE
-  event, NOT part of openapi.yaml — no codegen needed.
-- Client: `sendText` returns `Promise<{navigate?:string}>`; `HeyPepOverlay.handle()`
-  calls `setLocation` + `setOpen(false)` AFTER `await sendText` (reply already
-  rendered → no premature redirect).
+- Server: see short-circuit above. The `{navigate}`/`{tour}` SSE events are RAW
+  (not in openapi.yaml — no codegen).
+- Safety unchanged: `mightBeOverlayIntent` deterministic pre-filter + `isAllowedRoute`
+  allowlist (final authority, off-list→null, no open redirect) + try/catch→NO_INTENT.
+  A normal message resolves to no intent, never navigates/throws, always gets the
+  normal streamed coach answer. Onboarding is unaffected except explicit nav/tour
+  phrases (the pre-filter won't fire on financial-disclosure turns).
+- Clients consuming `sendText`'s `{navigate?, tour?}` result and ACTING on it:
+  `HeyPepOverlay.handle()` (setLocation+setOpen(false)), `PepperAssistant` main-chat
+  onSubmit (startTour/setLocation), and `AmbientOverlay.runCommand` (closeAmbient+
+  startTour/setLocation). All act AFTER `await sendText` so the reply renders first.
 - Both overlay paths (typed input and mic) funnel through `handle()` because the
   overlay mic is DICTATION (`dictateStop` → transcript → `handle` → `sendText`,
   the text route) — it does NOT use the voice-messages route. So navigation only

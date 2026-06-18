@@ -10,9 +10,11 @@ import { usePepper } from "@/pepper";
  * A self-contained, full-screen surface shown over the current route when the
  * wake word fires (or `openAmbient()` is called). It renders ONLY its own opaque
  * background and a large breathing orb — no input bar, chips, or route content.
- * It never changes the route or mounts a page, so dismissing it (Escape, tapping
- * the background, or saying / clicking "never mind") returns the user to exactly
- * where they were.
+ * It never AUTO-navigates: dismissing it (Escape, tapping the background, or
+ * saying / clicking "never mind") returns the user to exactly where they were.
+ * The one exception is an explicit navigation/tour command ("take me to the
+ * trading desk", "give me the tour"), which deliberately leaves the layer and
+ * routes — that is the user asking to go somewhere, not an auto-navigation.
  *
  * Flow: open -> speak the greeting -> capture one spoken command -> send it to
  * the coach (Mode B, no commit — nothing is written) -> show + speak the reply.
@@ -108,6 +110,7 @@ export function AmbientOverlay() {
     speechMuted,
     setSpeechMuted,
     sendText,
+    startTour,
   } = usePepper();
 
   const { isAuthenticated } = useAuth();
@@ -115,7 +118,7 @@ export function AmbientOverlay() {
   const { data: profile } = useGetProfile({
     query: { enabled: isAuthenticated, queryKey: getGetProfileQueryKey() },
   });
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const [phase, setPhase] = useState<"listening" | "thinking" | "answered">("listening");
   const [heard, setHeard] = useState("");
@@ -164,13 +167,26 @@ export function AmbientOverlay() {
         // Ignore if the layer was dismissed or a newer command started: never
         // speak or render a reply for a stale turn.
         if (myTurn !== turnRef.current) return;
+        // An explicit navigation/tour command leaves the ambient layer and acts.
+        // This is a deliberate, user-issued route change — distinct from the rule
+        // that the ambient layer never AUTO-navigates when it opens or dismisses.
+        if (result.tour && result.tour.length > 0) {
+          closeAmbient();
+          startTour(result.tour);
+          return;
+        }
+        if (result.navigate) {
+          closeAmbient();
+          setLocation(result.navigate);
+          return;
+        }
         const answer = result.reply ?? "";
         setReply(answer);
         setPhase("answered");
         if (answer) speak(answer);
       });
     },
-    [closeAmbient, speak],
+    [closeAmbient, speak, startTour, setLocation],
   );
 
   // Capture one spoken command via SpeechRecognition. No-op when unsupported —

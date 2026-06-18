@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { usePepper } from "@/pepper";
 import { useAuth, TrustGate } from "@/auth";
 import {
@@ -19,6 +20,7 @@ export function PepperAssistant() {
     busy,
     voice, setVoice,
     sendText,
+    startTour,
     startListening, stopListening, toggleListening,
     stopSpeaking,
     wakeWordEnabled, setWakeWordEnabled, wakeWordSupported,
@@ -26,6 +28,7 @@ export function PepperAssistant() {
     authRequired, clearAuthRequired,
   } = usePepper();
   const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
 
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -211,10 +214,20 @@ export function PepperAssistant() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (input.trim() && !busy) {
-                sendText(input.trim());
-                setInput("");
-              }
+              const text = input.trim();
+              if (!text || busy) return;
+              setInput("");
+              // A resolved navigation/tour command (e.g. "take me to the trading
+              // desk", "give me the tour") acts right here from the main chat —
+              // the server short-circuits it past the coach, so it confirms and
+              // routes without ever hitting the advice guardrail.
+              void sendText(text).then((result) => {
+                if (result.tour && result.tour.length > 0) {
+                  startTour(result.tour);
+                } else if (result.navigate) {
+                  setLocation(result.navigate);
+                }
+              });
             }}
             className="flex items-end gap-2"
           >

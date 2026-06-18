@@ -11,9 +11,13 @@ now opens THIS ambient layer, not the bottom panel.
 **Ambient surface contract:** own full-screen OPAQUE background (radial ember
 over near-black), a centered ~200px breathing orb, greeting "Hey [firstName]" +
 sub, a listening cue, the heard transcript, the reply line, and dismiss
-affordances ("never mind" spoken, Escape, background tap). It must NEVER change
-the route — it overlays the current route and dismiss returns to that exact route
-untouched.
+affordances ("never mind" spoken, Escape, background tap). It must never
+AUTO-navigate — it overlays the current route and dismiss returns to that exact
+route untouched. EXCEPTION: an explicit navigation/tour command ("take me to the
+trading desk", "give me the tour") deliberately leaves the layer and routes
+(`runCommand` does `closeAmbient()` + `startTour`/`setLocation` on the
+`sendText` result). That is the user asking to go somewhere — not an
+auto-navigation — so it does not violate the no-auto-nav rule.
 
 **Typed fallback is REQUIRED (supersedes the old "no input bar" rule).** Voice
 must be optional everywhere; the ambient surface now carries an always-present

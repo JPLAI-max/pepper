@@ -28,7 +28,11 @@ import {
 import { getOrCreateProfile } from "../../lib/identity";
 import { getSessionUserId } from "../../lib/auth";
 import { extractAndPersist } from "../../lib/extraction";
-import { classifyOverlayIntent, TOUR_STOPS } from "../../lib/navigation";
+import {
+  classifyOverlayIntent,
+  navConfirmationReply,
+  TOUR_STOPS,
+} from "../../lib/navigation";
 import { logger } from "../../lib/logger";
 
 const router: IRouter = Router();
@@ -210,30 +214,52 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
   }
 
   const overlay = parsed.data.mode === "overlay";
-  // Overlay (Mode B) may resolve a spoken/typed request like "take me to the
-  // trading desk" into an allowlisted in-app route, OR "give me the tour" into
-  // the guided demo walkthrough. Resolving it before we build the coach context
-  // lets Pepper acknowledge it by name. The allowlist (routes AND tour stops) is
-  // enforced server-side (see lib/navigation) — never an arbitrary path or URL.
-  const intent = overlay
-    ? await classifyOverlayIntent(parsed.data.content)
-    : { navigate: null, tour: false };
-  const navigateTo = intent.navigate;
-  const startTour = intent.tour;
+  // Resolve any navigation/tour intent on EVERY coach turn — the main landing
+  // chat as well as the "Hey Pep" overlay. A request like "take me to the
+  // trading desk" resolves to an allowlisted in-app route, and "give me the
+  // tour" to the guided demo walkthrough. classifyOverlayIntent is guarded by a
+  // deterministic pre-filter and a try/catch, so an ordinary message resolves to
+  // no intent, never throws, and falls through to the coach below. The allowlist
+  // (routes AND tour stops) is the final authority (see lib/navigation) — never
+  // an arbitrary path or URL, so there is no open-redirect surface.
+  const intent = await classifyOverlayIntent(parsed.data.content);
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  // An explicit navigation/tour command is navigation, NOT a financial-advice
+  // request: it is answered here and never reaches the coach model, so it can
+  // never trigger the not-a-licensed-advisor guardrail. We persist the turn,
+  // acknowledge it deterministically, and emit the allowlist-validated nav/tour
+  // event — for the main chat and the overlay alike.
+  if (intent.navigate || intent.tour) {
+    const reply = navConfirmationReply(intent)!;
+    await db
+      .insert(messages)
+      .values({ conversationId: id, role: "user", content: parsed.data.content });
+    res.write(`data: ${JSON.stringify({ content: reply })}\n\n`);
+    await db
+      .insert(messages)
+      .values({ conversationId: id, role: "assistant", content: reply });
+    if (intent.tour) {
+      res.write(`data: ${JSON.stringify({ tour: { stops: TOUR_STOPS } })}\n\n`);
+    } else if (intent.navigate) {
+      res.write(`data: ${JSON.stringify({ navigate: intent.navigate })}\n\n`);
+    }
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+    return;
+  }
+
   const chatMessages = await buildContextMessages(id, access.userId, {
     overlay,
     section: parsed.data.section,
-    navigateTo: navigateTo ?? undefined,
-    tour: startTour,
   });
   chatMessages.push({ role: "user", content: parsed.data.content });
   await db
     .insert(messages)
     .values({ conversationId: id, role: "user", content: parsed.data.content });
-
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
 
   // Trust gate: an anonymous user sharing financial specifics gets nudged to
   // set up an account so we can save their roadmap. The chat still proceeds.
@@ -284,13 +310,6 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
       } catch (err) {
         req.log.error({ err, conversationId: id }, "Overlay commit extraction failed");
       }
-    }
-    // Tour takes priority over a single-route navigation. The server owns the
-    // ordered, allowlisted stops the tour cycles through.
-    if (startTour) {
-      res.write(`data: ${JSON.stringify({ tour: { stops: TOUR_STOPS } })}\n\n`);
-    } else if (navigateTo) {
-      res.write(`data: ${JSON.stringify({ navigate: navigateTo })}\n\n`);
     }
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();

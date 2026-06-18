@@ -92,6 +92,23 @@ export interface OverlayIntent {
 
 const NO_INTENT: OverlayIntent = { navigate: null, tour: false };
 
+/**
+ * The deterministic acknowledgement Pepper gives for a resolved navigation/tour
+ * command. Because a navigation command is navigation — not a financial-advice
+ * request — these turns are answered HERE and never sent to the coach model, so
+ * they can never trigger the not-a-licensed-advisor guardrail. Returns null when
+ * the intent resolves to nothing (the turn falls through to the coach instead).
+ */
+export function navConfirmationReply(intent: OverlayIntent): string | null {
+  if (intent.tour) {
+    return `Of course — let's take the tour, starting at the ${TOUR_STOPS[0].name}.`;
+  }
+  if (intent.navigate) {
+    return `Of course — taking you to ${NAV_LABELS[intent.navigate]} now.`;
+  }
+  return null;
+}
+
 const NAV_MODEL = process.env.COACH_MODEL ?? "gpt-4o";
 
 const NAV_SYSTEM_PROMPT = `You are a navigation intent classifier for the Pepper wealth app. Decide whether the user is asking to be TAKEN to (navigate to) one of the app's sections, or to start the guided demo TOUR.
