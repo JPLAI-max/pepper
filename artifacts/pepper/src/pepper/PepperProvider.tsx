@@ -742,6 +742,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     wakeWordEnabled,
     setWakeWordEnabled,
     wakeWordSupported,
+    speechRecognitionSupported: wakeWordSupported,
     dictateStart,
     dictateStop,
     dictating,

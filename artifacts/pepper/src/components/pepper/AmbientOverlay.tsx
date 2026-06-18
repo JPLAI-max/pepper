@@ -63,7 +63,23 @@ box-shadow:0 0 90px rgba(255,126,63,.5);animation:pep-ambient-breathe 6s ease-in
 .pep-ambient .mute:hover{border-color:rgba(255,126,63,.45)}
 .pep-ambient .nevermind{margin-top:40px;background:none;border:none;color:#a8978a;font-size:.95rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .pep-ambient .nevermind:hover{color:#f6ece1}
+.pep-ambient .thinking{margin-top:24px;color:#a8978a;font-size:1rem;letter-spacing:.02em;animation:pep-ambient-pulse 1.4s ease-in-out infinite}
+@keyframes pep-ambient-pulse{0%,100%{opacity:.45}50%{opacity:1}}
+.pep-ambient .hint{margin-top:28px;max-width:520px;text-align:center;font-size:.92rem;line-height:1.5;color:#a8978a}
+.pep-ambient .askbar{margin-top:24px;display:flex;align-items:center;gap:8px;width:min(520px,92%);background:rgba(28,21,17,.65);border:1px solid rgba(255,180,120,.14);border-radius:999px;padding:8px 8px 8px 18px}
+.pep-ambient .askbar:focus-within{border-color:rgba(255,126,63,.45)}
+.pep-ambient .ask{flex:1;min-width:0;background:none;border:none;outline:none;color:#f6ece1;font-size:1rem;font-family:inherit}
+.pep-ambient .ask::placeholder{color:#a8978a}
+.pep-ambient .ask-send{flex:none;width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;display:grid;place-items:center;background:#ff7e3f;color:#fff;transition:opacity .15s ease}
+.pep-ambient .ask-send:disabled{opacity:.45;cursor:default}
 `;
+
+const SendIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
 
 const SpeakerOnIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -88,6 +104,7 @@ export function AmbientOverlay() {
     speak,
     cancelSpeech,
     captureCommand,
+    speechRecognitionSupported,
     speechMuted,
     setSpeechMuted,
     sendText,
@@ -103,7 +120,9 @@ export function AmbientOverlay() {
   const [phase, setPhase] = useState<"listening" | "thinking" | "answered">("listening");
   const [heard, setHeard] = useState("");
   const [reply, setReply] = useState("");
+  const [inputText, setInputText] = useState("");
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const stopCaptureRef = useRef<() => void>(() => {});
   // Monotonic token per capture. A response only applies (shows + speaks) if its
   // token is still current; closing the layer or starting a new capture bumps it,
@@ -123,40 +142,63 @@ export function AmbientOverlay() {
   const firstNameRef = useRef(firstName);
   firstNameRef.current = firstName;
 
-  // Capture one spoken command, then send it to the coach and speak the reply.
+  // Send one command (spoken OR typed) to the coach, then show + speak the reply.
+  // Shared by voice capture and the typed fallback so both paths behave identically.
+  const runCommand = useCallback(
+    (raw: string) => {
+      const t = raw.trim();
+      if (!t) return;
+      if (DISMISS.test(t)) {
+        closeAmbient();
+        return;
+      }
+      // New command invalidates any in-flight response from a previous one.
+      const myTurn = ++turnRef.current;
+      setHeard(t);
+      setReply("");
+      setPhase("thinking");
+      void sendTextRef.current(t, {
+        mode: "overlay",
+        section: sectionRef.current,
+      }).then((result) => {
+        // Ignore if the layer was dismissed or a newer command started: never
+        // speak or render a reply for a stale turn.
+        if (myTurn !== turnRef.current) return;
+        const answer = result.reply ?? "";
+        setReply(answer);
+        setPhase("answered");
+        if (answer) speak(answer);
+      });
+    },
+    [closeAmbient, speak],
+  );
+
+  // Capture one spoken command via SpeechRecognition. No-op when unsupported —
+  // the typed fallback covers that case so the layer never dead-ends.
   const startCapture = useCallback(() => {
-    // New capture invalidates any in-flight response from a previous one.
-    const myTurn = ++turnRef.current;
+    if (!speechRecognitionSupported) return;
+    // Invalidate any in-flight response while we re-listen.
+    turnRef.current++;
     setPhase("listening");
     setHeard("");
     setReply("");
     stopCaptureRef.current();
     stopCaptureRef.current = captureCommand({
       onInterim: (text) => setHeard(text),
-      onFinal: (text) => {
-        const t = text.trim();
-        if (!t) return;
-        if (DISMISS.test(t)) {
-          closeAmbient();
-          return;
-        }
-        setHeard(t);
-        setPhase("thinking");
-        void sendTextRef.current(t, {
-          mode: "overlay",
-          section: sectionRef.current,
-        }).then((result) => {
-          // Ignore if the layer was dismissed or a new capture started: never
-          // speak or render a reply for a stale turn.
-          if (myTurn !== turnRef.current) return;
-          const answer = result.reply ?? "";
-          setReply(answer);
-          setPhase("answered");
-          if (answer) speak(answer);
-        });
-      },
+      onFinal: (text) => runCommand(text),
     });
-  }, [captureCommand, closeAmbient, speak]);
+  }, [captureCommand, runCommand, speechRecognitionSupported]);
+
+  const submitTyped = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const v = inputText.trim();
+      if (!v) return;
+      setInputText("");
+      runCommand(v);
+    },
+    [inputText, runCommand],
+  );
 
   // On open: greet (spoken + shown), then start listening once the greeting
   // finishes. On close: stop capture and cancel any speech.
@@ -171,7 +213,18 @@ export function AmbientOverlay() {
     setPhase("listening");
     setHeard("");
     setReply("");
-    speak(`Hey ${firstNameRef.current}. How can I help?`, { onEnd: startCapture });
+    setInputText("");
+    if (speechRecognitionSupported) {
+      // Voice path: greet, then listen once the greeting finishes.
+      speak(`Hey ${firstNameRef.current}. How can I help?`, { onEnd: startCapture });
+    } else {
+      // No SpeechRecognition (e.g. Firefox/Safari): never spin the listening
+      // dots forever. Greet (TTS is independent and may still work), then hand
+      // off to the always-present typed input.
+      setPhase("answered");
+      speak(`Hey ${firstNameRef.current}. How can I help?`);
+      window.setTimeout(() => inputRef.current?.focus(), 60);
+    }
     return () => {
       turnRef.current++;
       stopCaptureRef.current();
@@ -219,23 +272,30 @@ export function AmbientOverlay() {
 
       <button
         type="button"
-        className={`orb${phase === "listening" ? " active" : ""}`}
-        aria-label="Tap to speak again"
+        className={`orb${phase === "listening" && speechRecognitionSupported ? " active" : ""}`}
+        aria-label={speechRecognitionSupported ? "Tap to speak again" : "Type your request below"}
         onClick={(e) => {
           stopBubble(e);
-          startCapture();
+          if (speechRecognitionSupported) startCapture();
+          else inputRef.current?.focus();
         }}
       />
 
       <h2 className="greeting">Hey {firstName}</h2>
       <p className="sub">How can I help?</p>
 
-      {phase === "listening" && (
+      {phase === "listening" && speechRecognitionSupported && (
         <div className="dots" aria-hidden="true">
           <span />
           <span />
           <span />
         </div>
+      )}
+
+      {phase === "thinking" && (
+        <p className="thinking" aria-live="polite">
+          Thinking…
+        </p>
       )}
 
       {heard && (
@@ -249,6 +309,27 @@ export function AmbientOverlay() {
           {reply}
         </p>
       )}
+
+      {!speechRecognitionSupported && (
+        <p className="hint" onClick={stopBubble}>
+          Voice input isn&apos;t available in this browser — type your request below.
+        </p>
+      )}
+
+      <form className="askbar" onSubmit={submitTyped} onClick={stopBubble}>
+        <input
+          ref={inputRef}
+          className="ask"
+          type="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder="Type your request…"
+          aria-label="Type your request"
+        />
+        <button type="submit" className="ask-send" aria-label="Send" disabled={!inputText.trim()}>
+          <SendIcon />
+        </button>
+      </form>
 
       <button
         type="button"

@@ -210,6 +210,7 @@ export function HeyPepOverlay() {
     busy,
     sendText,
     startTour,
+    openAmbient,
     dictateStart,
     dictateStop,
     dictating,
@@ -349,6 +350,15 @@ export function HeyPepOverlay() {
           </button>
           <button onClick={() => handle("I'd like to update my income.")}>
             Update my income
+          </button>
+          <button onClick={() => handle("give me the tour")}>Take the tour</button>
+          <button
+            onClick={() => {
+              setOpen(false);
+              openAmbient();
+            }}
+          >
+            Hands-free
           </button>
         </div>
 

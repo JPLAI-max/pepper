@@ -87,6 +87,13 @@ export interface PepperContextValue {
   wakeWordEnabled: boolean;
   setWakeWordEnabled: (enabled: boolean) => void;
   wakeWordSupported: boolean;
+  /**
+   * Whether the browser exposes the SpeechRecognition API (Chrome/Edge). When
+   * false, voice capture (wake word + ambient listening) is unavailable; the UI
+   * must degrade to the typed/tap path and never dead-end. TTS (speechSynthesis)
+   * is independent and may still work.
+   */
+  speechRecognitionSupported: boolean;
 
   /** Dictate into any field (press-and-hold): start recording, then stop to get the transcript. */
   dictateStart: () => Promise<void>;

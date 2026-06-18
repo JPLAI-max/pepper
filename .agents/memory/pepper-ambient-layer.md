@@ -11,9 +11,14 @@ now opens THIS ambient layer, not the bottom panel.
 **Ambient surface contract:** own full-screen OPAQUE background (radial ember
 over near-black), a centered ~200px breathing orb, greeting "Hey [firstName]" +
 sub, a listening cue, the heard transcript, the reply line, and dismiss
-affordances ("never mind" spoken, Escape, background tap). NO input bar / chips /
-route content. It must NEVER change the route — it overlays the current route and
-dismiss returns to that exact route untouched.
+affordances ("never mind" spoken, Escape, background tap). It must NEVER change
+the route — it overlays the current route and dismiss returns to that exact route
+untouched.
+
+**Typed fallback is REQUIRED (supersedes the old "no input bar" rule).** Voice
+must be optional everywhere; the ambient surface now carries an always-present
+themed typed input (`askbar`) + send. Do not remove it to "stay minimal" — that
+would re-introduce the dead-end this fixed.
 
 **z-index:** the ambient root must sit ABOVE all global app-shell UI. `TourBanner`
 is `z-[80]`, so ambient uses `z-index:90`. If you add higher-z global UI, raise
@@ -39,3 +44,19 @@ routes spam `/api/profile` 401s. Same gating pattern App.tsx already uses.
 **Wake vs ambient recognition exclusivity:** both use the browser SpeechRecognition
 API and cannot run concurrently. The wake-word effect is guarded to pause while
 `ambient === true`; ambient command capture (`captureCommand`) only runs while open.
+
+**Graceful voice fallback (SpeechRecognition optional everywhere):** `usePepper`
+exposes `speechRecognitionSupported` (alias of `wakeWordSupported` =
+`getSpeechRecognitionCtor()!==null`). When false (Firefox/Safari): ambient does
+NOT start a capture loop (no infinite "listening" dots), shows a soft non-blocking
+hint, greets via TTS, and auto-focuses the typed input; the orb click focuses the
+input instead of capturing. Mic affordances elsewhere (PepperAssistant,
+HeyPepOverlay, TourBanner) already use MediaRecorder + server STT (not
+SpeechRecognition) so they work regardless. TTS (`speechSynthesis`) is independent
+of SpeechRecognition and must keep working. Both voice + typed paths funnel through
+one shared `runCommand(text)` in AmbientOverlay so behavior is identical.
+
+**Ambient/tour reachable without mic:** ambient + the guided tour must be invokable
+by typed command AND/OR a visible tap control, never only by wake word/mic.
+HeyPepOverlay's quick row has visible "Take the tour" (`handle("give me the tour")`)
+and "Hands-free" (`setOpen(false)+openAmbient()`) buttons for this.
