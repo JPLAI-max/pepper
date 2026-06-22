@@ -72,3 +72,15 @@ everything") walks the demo routes in order: /market → /financing →
   mic (dictate→regex next/stop) because the overlay isn't present on demo pages.
 - `tourNext` auto-ends after the last stop; `tourStop` removes the banner.
   `reset()` (logout) MUST also clear tour state or a stale banner survives.
+- **Tour must REVEAL the demo, not narrate behind the chat.** TourBanner's
+  navigate `useEffect` calls `setOpen(false)` alongside `setLocation(route)`, so
+  the chat panel closes on tour start AND every Next (effect keys on the stop's
+  route, which changes each advance) — the demo route shows beneath the floating
+  banner, never the conversation covering it. **Why:** the panel otherwise stayed
+  open over the navigated demo page.
+- **Suppress typed chatter during an active tour.** PepperAssistant's submit
+  early-returns (clears input, no `sendText`) while `tour !== null`, so a stray
+  "ok let's go" can't reach the coach and trip the advice guardrail mid-tour. The
+  banner's Next is the primary control during a tour; coach behavior is unchanged
+  when no tour is running. (Stricter than "only non-nav" — but nav during a tour
+  is redundant since the banner already drives navigation.)
