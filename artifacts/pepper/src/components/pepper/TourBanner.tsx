@@ -17,17 +17,23 @@ import { usePepper } from "@/pepper";
  * available on the demo routes, so the banner carries its own mic).
  */
 export function TourBanner() {
-  const { tour, tourNext, tourStop, dictateStart, dictateStop, dictating } =
+  const { tour, tourNext, tourStop, dictateStart, dictateStop, dictating, setOpen } =
     usePepper();
   const [, setLocation] = useLocation();
 
   const current = tour ? tour.stops[tour.index] : null;
   const route = current?.route;
 
-  // Navigate to the current stop whenever it changes (including on tour start).
+  // Navigate to the current stop whenever it changes (including on tour start
+  // and on every Next). Close the chat panel at the same time so the demo
+  // screen beneath is actually visible — the tour reveals the real route with
+  // only this floating banner over it, never the chat conversation covering it.
   useEffect(() => {
-    if (route) setLocation(route);
-  }, [route, setLocation]);
+    if (route) {
+      setOpen(false);
+      setLocation(route);
+    }
+  }, [route, setLocation, setOpen]);
 
   if (!tour || !current) return null;
 

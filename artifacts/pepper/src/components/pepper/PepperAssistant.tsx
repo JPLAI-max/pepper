@@ -20,7 +20,7 @@ export function PepperAssistant() {
     busy,
     voice, setVoice,
     sendText,
-    startTour,
+    startTour, tour,
     startListening, stopListening, toggleListening,
     stopSpeaking,
     wakeWordEnabled, setWakeWordEnabled, wakeWordSupported,
@@ -216,6 +216,14 @@ export function PepperAssistant() {
               e.preventDefault();
               const text = input.trim();
               if (!text || busy) return;
+              // While a guided tour is active, the banner's Next is the primary
+              // control. Ignore typed chatter so a stray "ok let's go" can't
+              // reach the coach and trigger a redirect/advice refusal mid-tour.
+              // Normal coach behavior is unchanged when no tour is running.
+              if (tour) {
+                setInput("");
+                return;
+              }
               setInput("");
               // A resolved navigation/tour command (e.g. "take me to the trading
               // desk", "give me the tour") acts right here from the main chat —
