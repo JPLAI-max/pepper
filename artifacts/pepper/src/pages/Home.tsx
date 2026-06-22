@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 
 export default function Home() {
   const ref = useRef<HTMLIFrameElement>(null);
-  const { setOpen, sendText } = usePepper();
+  const { setOpen, sendText, startTour } = usePepper();
   const { open: openAuth } = useAuthModal();
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
@@ -35,7 +35,13 @@ export default function Home() {
         // and converts to an account later via the trust gate.
         setOpen(true);
         if (text) {
-          void sendText(text);
+          // A resolved navigation/tour command acts here too — the server
+          // short-circuits it past the coach, so consuming the result routes
+          // or starts the tour; a normal message just streams into the panel.
+          void sendText(text).then((result) => {
+            if (result?.tour && result.tour.length > 0) startTour(result.tour);
+            else if (result?.navigate) setLocation(result.navigate);
+          });
           field.value = "";
         }
       };
@@ -49,7 +55,7 @@ export default function Home() {
     iframe.addEventListener("load", wire);
     wire();
     return () => iframe.removeEventListener("load", wire);
-  }, [setOpen, sendText]);
+  }, [setOpen, sendText, startTour, setLocation]);
 
   return (
     <>
