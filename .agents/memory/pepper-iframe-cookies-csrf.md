@@ -48,6 +48,22 @@ guard ever blocks a legit origin, add that EXACT logged `sourceHost`, not a
 wildcard. (Verified: real browser traffic never tripped the guard; the iframe
 403s were the cookie-drop above, fixed by `partitioned`.)
 
+**Not every 201-then-403 is a cookie drop.** A SECOND, client-side cause of the
+same "Sorry, something went wrong" + messages 403 is a **stale stored
+conversation id**: `PepperProvider.ensureConversation` reuses
+`localStorage["pepper.conversationId"]` without checking the current session owns
+it. A returning guest whose session rotated/expired (or whose guest conversation
+was auto-purged) holds an orphaned id, so `resolveConversationAccess` legitimately
+403s forever and the user is permanently stuck (cookie is fine; the id just isn't
+theirs). Fix lives in the client, not the cookie: `resetConversation()` clears the
+ref + localStorage; the message-load effect drops the id on 403/404; and BOTH
+`sendText` and `sendVoiceBlob` catch a `streamSSE` error matching `/status 403/`,
+reset, create a fresh conversation, and retry the turn ONCE (the 403 fails before
+any SSE body, so no double output; single nested retry, no loop). When debugging a
+messages 403, decide which cause: cookie-drop (fix server cookie attrs) vs.
+stale-id (client recreates) — check whether a brand-new guest in a clean browser
+also fails (cookie) or only a returning one (stale id).
+
 **Coach model id:** the OpenAI chat model is env-driven `COACH_MODEL` (default
 `gpt-4o`) in `openai/index.ts` + `navigation.ts`. Never hardcode a non-existent
 id (a bogus `gpt-5.4` broke every coach turn). The Replit AI-integrations proxy

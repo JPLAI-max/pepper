@@ -332,6 +332,20 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Forget the current conversation so the next ensureConversation creates a
+  // fresh one. Used to recover from a stored id the current session no longer
+  // owns (e.g. a rotated/purged guest session), which the server answers with a
+  // 403 — otherwise the client would loop forever on a forbidden conversation.
+  const resetConversation = useCallback(() => {
+    conversationIdRef.current = null;
+    conversationPromiseRef.current = null;
+    try {
+      localStorage.removeItem(STORAGE_CONV);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // Load prior messages once.
   useEffect(() => {
     let cancelled = false;
@@ -349,7 +363,21 @@ export function PepperProvider({ children }: { children: ReactNode }) {
           `${API_BASE}/openai/conversations/${id}/messages`,
           { credentials: "include" },
         );
-        if (!res.ok) return;
+        if (!res.ok) {
+          // A stored conversation the current session no longer owns (rotated /
+          // purged guest session) returns 403. Drop the stale id so the next
+          // send starts a fresh conversation instead of looping on a forbidden
+          // one. Other failures (network/5xx) keep the id for a later retry.
+          if (res.status === 403 || res.status === 404) {
+            conversationIdRef.current = null;
+            try {
+              localStorage.removeItem(STORAGE_CONV);
+            } catch {
+              /* ignore */
+            }
+          }
+          return;
+        }
         const rows = (await res.json()) as {
           id: number;
           role: string;
@@ -414,43 +442,64 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       let navigate: string | undefined;
       let tourStops: TourStop[] | undefined;
       let assistantText = "";
+      const messageBody = {
+        content: trimmed,
+        ...(opts?.mode ? { mode: opts.mode } : {}),
+        ...(opts?.section != null ? { section: opts.section } : {}),
+        ...(opts?.commit != null ? { commit: opts.commit } : {}),
+      };
+      const onEvent = (event: Record<string, unknown>) => {
+        if (event.authRequired === true) {
+          setAuthRequired(true);
+        }
+        // Allowlisted, server-resolved navigation target (Mode B overlay).
+        if (typeof event.navigate === "string") {
+          navigate = event.navigate;
+        }
+        // Server-owned guided tour: the ordered, allowlisted stops to walk.
+        if (
+          event.tour &&
+          typeof event.tour === "object" &&
+          Array.isArray((event.tour as { stops?: unknown }).stops)
+        ) {
+          tourStops = (event.tour as { stops: TourStop[] }).stops;
+        }
+        if (typeof event.content === "string") {
+          assistantText += event.content;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: m.content + event.content }
+                : m,
+            ),
+          );
+        }
+      };
       try {
-        await streamSSE(
-          `${API_BASE}/openai/conversations/${id}/messages`,
-          {
-            content: trimmed,
-            ...(opts?.mode ? { mode: opts.mode } : {}),
-            ...(opts?.section != null ? { section: opts.section } : {}),
-            ...(opts?.commit != null ? { commit: opts.commit } : {}),
-          },
-          (event) => {
-            if (event.authRequired === true) {
-              setAuthRequired(true);
-            }
-            // Allowlisted, server-resolved navigation target (Mode B overlay).
-            if (typeof event.navigate === "string") {
-              navigate = event.navigate;
-            }
-            // Server-owned guided tour: the ordered, allowlisted stops to walk.
-            if (
-              event.tour &&
-              typeof event.tour === "object" &&
-              Array.isArray((event.tour as { stops?: unknown }).stops)
-            ) {
-              tourStops = (event.tour as { stops: TourStop[] }).stops;
-            }
-            if (typeof event.content === "string") {
-              assistantText += event.content;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? { ...m, content: m.content + event.content }
-                    : m,
-                ),
-              );
-            }
-          },
-        );
+        try {
+          await streamSSE(
+            `${API_BASE}/openai/conversations/${id}/messages`,
+            messageBody,
+            onEvent,
+          );
+        } catch (err) {
+          // A stale/forbidden conversation (the stored id belongs to a session
+          // this browser no longer has — common for returning guests) 403s.
+          // Drop it, open a fresh conversation, and retry the turn once so the
+          // user isn't permanently stuck behind an error. The 403 fails before
+          // any stream body, so nothing was appended yet — no double output.
+          if (err instanceof Error && /status 403/.test(err.message)) {
+            resetConversation();
+            const freshId = await ensureConversation();
+            await streamSSE(
+              `${API_BASE}/openai/conversations/${freshId}/messages`,
+              messageBody,
+              onEvent,
+            );
+          } else {
+            throw err;
+          }
+        }
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId && m.content === ""
@@ -480,7 +529,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       }
       return { navigate, tour: tourStops, reply: assistantText.trim() || undefined };
     },
-    [busy, ensureConversation, queryClient],
+    [busy, ensureConversation, resetConversation, queryClient],
   );
 
   const startTour = useCallback((stops: TourStop[]) => {
@@ -517,11 +566,8 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       let assistantStarted = false;
       let navTarget: string | undefined;
       let tourStops: TourStop[] | undefined;
-      try {
-        await streamSSE(
-          `${API_BASE}/openai/conversations/${id}/voice-messages`,
-          { audio: base64, voice },
-          (event) => {
+      const voiceBody = { audio: base64, voice };
+      const onEvent = (event: Record<string, unknown>) => {
             const type = event.type as string | undefined;
             if (type === "auth_required") {
               setAuthRequired(true);
@@ -561,8 +607,30 @@ export function PepperProvider({ children }: { children: ReactNode }) {
               // Server-owned guided tour resolved from a spoken command.
               tourStops = (event.data as { stops: TourStop[] }).stops;
             }
-          },
-        );
+      };
+      try {
+        try {
+          await streamSSE(
+            `${API_BASE}/openai/conversations/${id}/voice-messages`,
+            voiceBody,
+            onEvent,
+          );
+        } catch (err) {
+          // Same stale/forbidden-conversation recovery as the text path: a
+          // returning guest's stored conversation id can be orphaned (403);
+          // drop it, open a fresh conversation, and retry the voice turn once.
+          if (err instanceof Error && /status 403/.test(err.message)) {
+            resetConversation();
+            const freshId = await ensureConversation();
+            await streamSSE(
+              `${API_BASE}/openai/conversations/${freshId}/voice-messages`,
+              voiceBody,
+              onEvent,
+            );
+          } else {
+            throw err;
+          }
+        }
         if (pendingAudio) {
           setStatus("speaking");
           await playAudio(pendingAudio);
@@ -590,7 +658,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       }
       return { navigate: navTarget, tour: tourStops };
     },
-    [ensureConversation, voice, playAudio, queryClient],
+    [ensureConversation, resetConversation, voice, playAudio, queryClient],
   );
 
   const startListening = useCallback(async () => {
