@@ -45,8 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = data?.user ?? null;
 
   const invalidateAll = useCallback(async () => {
-    // Identity changed: drop every cached query so per-user data is refetched.
-    await queryClient.invalidateQueries();
+    // Identity changed. Await ONLY the identity query so auth-gated routes flip
+    // immediately (no redirect bounce), then invalidate everything else in the
+    // background. Awaiting a blanket invalidateQueries() blocks on EVERY active
+    // query's refetch — a single slow/stuck one (or a transient 502 that then
+    // retries) left the auth form stuck on "Just a moment…" forever even though
+    // login/signup had already succeeded and the session cookie was set.
+    await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+    void queryClient.invalidateQueries();
   }, [queryClient]);
 
   const signup = useCallback(
