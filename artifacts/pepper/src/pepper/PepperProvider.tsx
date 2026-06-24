@@ -24,6 +24,7 @@ import type {
   PepperVoice,
   TourState,
   TourStop,
+  VoiceTurnResult,
 } from "./types";
 
 const API_BASE = "/api";
@@ -503,10 +504,10 @@ export function PepperProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendVoiceBlob = useCallback(
-    async (blob: Blob) => {
+    async (blob: Blob): Promise<VoiceTurnResult> => {
       if (blob.size === 0) {
         setStatus("idle");
-        return;
+        return {};
       }
       const id = await ensureConversation();
       const base64 = await blobToBase64(blob);
@@ -514,6 +515,8 @@ export function PepperProvider({ children }: { children: ReactNode }) {
       const assistantId = uid();
       let pendingAudio: string | null = null;
       let assistantStarted = false;
+      let navTarget: string | undefined;
+      let tourStops: TourStop[] | undefined;
       try {
         await streamSSE(
           `${API_BASE}/openai/conversations/${id}/voice-messages`,
@@ -545,6 +548,18 @@ export function PepperProvider({ children }: { children: ReactNode }) {
               }
             } else if (type === "audio" && typeof event.data === "string") {
               pendingAudio = event.data as string;
+            } else if (type === "navigate" && typeof event.data === "string") {
+              // Server-resolved, allowlisted single-route navigation for a
+              // spoken command ("take me to the trading desk").
+              navTarget = event.data as string;
+            } else if (
+              type === "tour" &&
+              event.data &&
+              typeof event.data === "object" &&
+              Array.isArray((event.data as { stops?: unknown }).stops)
+            ) {
+              // Server-owned guided tour resolved from a spoken command.
+              tourStops = (event.data as { stops: TourStop[] }).stops;
             }
           },
         );
@@ -573,6 +588,7 @@ export function PepperProvider({ children }: { children: ReactNode }) {
         void queryClient.invalidateQueries({ queryKey: getGetRoadmapQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetOpportunityMatchesQueryKey() });
       }
+      return { navigate: navTarget, tour: tourStops };
     },
     [ensureConversation, voice, playAudio, queryClient],
   );
@@ -589,18 +605,18 @@ export function PepperProvider({ children }: { children: ReactNode }) {
     startListeningRef.current = startListening;
   }, [startListening]);
 
-  const stopListening = useCallback(async () => {
-    if (status !== "listening") return;
+  const stopListening = useCallback(async (): Promise<VoiceTurnResult> => {
+    if (status !== "listening") return {};
     const blob = await recorder.stopRecording();
-    await sendVoiceBlob(blob);
+    return await sendVoiceBlob(blob);
   }, [status, recorder, sendVoiceBlob]);
 
-  const toggleListening = useCallback(async () => {
+  const toggleListening = useCallback(async (): Promise<VoiceTurnResult> => {
     if (status === "listening") {
-      await stopListening();
-    } else {
-      await startListening();
+      return await stopListening();
     }
+    await startListening();
+    return {};
   }, [status, startListening, stopListening]);
 
   const dictateStart = useCallback(async (): Promise<void> => {

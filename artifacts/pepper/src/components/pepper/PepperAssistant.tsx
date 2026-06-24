@@ -270,7 +270,19 @@ export function PepperAssistant() {
               variant={status === "listening" ? "destructive" : "secondary"}
               size="icon"
               className={`shrink-0 rounded-full w-12 h-12 shadow-sm border border-white/5 ${status === "listening" ? "shadow-[0_0_15px_rgba(255,0,0,0.3)] animate-pulse" : "hover:bg-white/10"}`}
-              onClick={toggleListening}
+              onClick={() => {
+                // A spoken navigation/tour command ("take me on a tour",
+                // "open the trading desk") is resolved + allowlisted server-side
+                // and returned here, so the mic acts on it just like the typed
+                // path — start the guided tour or route to the section.
+                void toggleListening().then((result) => {
+                  if (result.tour && result.tour.length > 0) {
+                    startTour(result.tour);
+                  } else if (result.navigate) {
+                    setLocation(result.navigate);
+                  }
+                });
+              }}
               disabled={busy && status !== "listening" && status !== "speaking"}
             >
               {status === "speaking" ? <SquareSquare className="w-5 h-5" onClick={(e) => { e.stopPropagation(); stopSpeaking(); }} /> : 

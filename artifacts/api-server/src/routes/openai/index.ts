@@ -353,6 +353,43 @@ router.post("/openai/conversations/:id/voice-messages", async (req, res) => {
       `data: ${JSON.stringify({ type: "user_transcript", data: userTranscript })}\n\n`,
     );
 
+    // Navigation/tour intent — the spoken analog of the typed chat's
+    // short-circuit (see the messages route above). "Take me on a tour" or
+    // "open the trading desk" is navigation, NOT a financial-advice request, so
+    // we resolve it against the server-owned allowlist, acknowledge it
+    // deterministically, speak the confirmation, and emit the nav/tour event —
+    // it never reaches the coach model (so it can't hit the advice guardrail).
+    const intent = await classifyOverlayIntent(userTranscript);
+    if (intent.navigate || intent.tour) {
+      const reply = navConfirmationReply(intent)!;
+      res.write(`data: ${JSON.stringify({ type: "transcript", data: reply })}\n\n`);
+      try {
+        const navVoice = VOICE_MAP[parsed.data.voice ?? "female"] ?? "shimmer";
+        const speech = await textToSpeech(reply, navVoice, "mp3");
+        res.write(
+          `data: ${JSON.stringify({ type: "audio", data: speech.toString("base64") })}\n\n`,
+        );
+      } catch (err) {
+        req.log.error({ err }, "Nav confirmation TTS failed");
+      }
+      if (intent.tour) {
+        res.write(
+          `data: ${JSON.stringify({ type: "tour", data: { stops: TOUR_STOPS } })}\n\n`,
+        );
+      } else if (intent.navigate) {
+        res.write(
+          `data: ${JSON.stringify({ type: "navigate", data: intent.navigate })}\n\n`,
+        );
+      }
+      await db.insert(messages).values([
+        { conversationId: id, role: "user", content: userTranscript },
+        { conversationId: id, role: "assistant", content: reply },
+      ]);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+      return;
+    }
+
     // Trust gate for voice: nudge anonymous users to set up an account when
     // they speak financial specifics.
     if (access.userId == null && mentionsFinancialSpecifics(userTranscript)) {

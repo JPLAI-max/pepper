@@ -42,10 +42,24 @@ name path is now dead for nav; the coach still HAS the blocks for legacy callers
   `HeyPepOverlay.handle()` (setLocation+setOpen(false)), `PepperAssistant` main-chat
   onSubmit (startTour/setLocation), and `AmbientOverlay.runCommand` (closeAmbient+
   startTour/setLocation). All act AFTER `await sendText` so the reply renders first.
-- Both overlay paths (typed input and mic) funnel through `handle()` because the
-  overlay mic is DICTATION (`dictateStop` → transcript → `handle` → `sendText`,
-  the text route) — it does NOT use the voice-messages route. So navigation only
-  needed wiring in the text route + sendText, not the voice route.
+- Both OVERLAY paths (typed input and overlay mic) funnel through `handle()`
+  because the overlay mic is DICTATION (`dictateStop` → transcript → `handle` →
+  `sendText`, the text route). The WAKE word opens the ambient layer, whose
+  capture → `sendText` (text route) too. So those paths resolve nav/tour via the
+  text route.
+- BUT the main `PepperAssistant` push-to-talk mic is the ONE true voice path:
+  `toggleListening` → `stopListening` → `sendVoiceBlob` → the `/voice-messages`
+  route. That route ALSO resolves nav/tour now (it must — spoken "take me on a
+  tour" used to fall through to the coach and only show a text reply, never
+  navigating). It runs `classifyOverlayIntent` right after STT and, on nav/tour,
+  short-circuits: emit typed `{type:"transcript"}` (the deterministic
+  `navConfirmationReply`) + `{type:"audio"}` (TTS so Pepper SPEAKS it) +
+  `{type:"navigate"}`|`{type:"tour",data:{stops}}`, persist both msgs, `{done}`,
+  return (never reaches coach; no extraction). Voice SSE stays TYPED (`{type,data}`)
+  unlike the text route's untyped chunks — so `navigate`/`tour` are typed events
+  there. `sendVoiceBlob` returns `{navigate?,tour?}`; `stopListening`/
+  `toggleListening` propagate it; `PepperAssistant`'s mic onClick acts on the
+  result (startTour/setLocation), mirroring its typed-submit handler.
 - First name for the signed-in greeting is `displayName.split(" ")[0]`, server/
   session-derived, skipped when "Friend" (unset default).
 

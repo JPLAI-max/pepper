@@ -25,6 +25,14 @@ export interface TourState {
   index: number;
 }
 
+/** The result of a spoken turn: any server-resolved navigation/tour to act on. */
+export interface VoiceTurnResult {
+  /** An allowlisted single-route destination resolved from the spoken command. */
+  navigate?: string;
+  /** Guided-tour stops resolved from the spoken command. */
+  tour?: TourStop[];
+}
+
 /** Callbacks for a single ambient ("Hey Pep") spoken-command capture. */
 export interface AmbientCaptureHandlers {
   /** Partial/interim transcript as the user speaks. */
@@ -76,9 +84,13 @@ export interface PepperContextValue {
 
   /** Voice conversation: start/stop a spoken turn (records, transcribes, replies, speaks). */
   startListening: () => Promise<void>;
-  stopListening: () => Promise<void>;
-  /** Convenience toggle for a push-to-talk button. */
-  toggleListening: () => Promise<void>;
+  stopListening: () => Promise<VoiceTurnResult>;
+  /**
+   * Convenience toggle for a push-to-talk button. Resolves to any
+   * server-resolved navigation/tour for the spoken turn so the caller can act
+   * (navigate or start the guided tour), mirroring the typed `sendText` path.
+   */
+  toggleListening: () => Promise<VoiceTurnResult>;
 
   /** Stop any in-progress spoken reply playback. */
   stopSpeaking: () => void;
