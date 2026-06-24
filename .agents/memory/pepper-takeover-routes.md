@@ -10,8 +10,16 @@ verbatim via iframe (pattern from `pages/Reveal.tsx`): `pages/Market.tsx`
 They are **pure simulations** — no real money/securities/digital-assets, no DB
 writes, no external/wallet/blockchain calls.
 
-To mount one safely there are THREE coordinated places, and missing any one
-leaks a real engine onto the simulation screen:
+Two access tiers among them:
+- `/market`, `/financing`, `/capital-markets` are **PUBLIC** (rendered directly
+  in `App.tsx`, NOT wrapped in `ProtectedRoute`, NOT inside `AppLayout`). They
+  must be guest-reachable so the guided TOUR can showcase them without an
+  account — gating them (route guard or in-page auth redirect) re-introduces the
+  "guest tour bounces to landing" bug. The pages themselves have NO auth gate;
+  their Back button goes to `/dashboard` when authenticated else `/`.
+- `/reveal` stays **auth-only** (`ProtectedRoute` → `AppLayout`).
+
+To mount one safely, prevent real engines from leaking onto the simulation:
 
 1. **Iframe sandbox.** Use `sandbox="allow-scripts"` WITHOUT `allow-same-origin`.
    That puts the embedded doc in an opaque origin so its scripts run but cannot
@@ -19,17 +27,24 @@ leaks a real engine onto the simulation screen:
    app storage. Only safe because the demo HTML uses no localStorage/fetch/
    cookies — if a future demo needs networking, proxy it through a reviewed
    contract, do NOT add `allow-same-origin`.
-2. **`App.tsx` → `APP_SHELL_ROUTES`.** Add the path here so the global
-   `PepperAssistant` panel (mounted by `GlobalAssistant`) is suppressed.
-3. **`AppLayout.tsx` → `isTakeover`.** Add the path to the `isTakeover` check;
-   `HeyPepOverlay` and `GlobalDropZone` are gated on `!isTakeover`, so neither
-   the "Hey Pep" overlay nor the document drop layer mounts behind the iframe.
+2. **`App.tsx` → `TAKEOVER_ROUTES`.** `GlobalAssistant` returns null on any path
+   in this list (guest OR authed), so the `PepperAssistant` orb never surfaces
+   over a demo. This is the suppression that matters for the PUBLIC demo routes,
+   since they render OUTSIDE `AppLayout`. (`APP_SHELL_ROUTES` only suppresses the
+   orb for AUTHED users and is now redundant for these three — keep them in sync.)
+3. **`AppLayout.tsx` → `isTakeover`.** Still relevant for `/reveal` (which DOES
+   render inside `AppLayout`): `HeyPepOverlay` and `GlobalDropZone` are gated on
+   `!isTakeover`. The public demo routes don't mount `AppLayout` at all, so those
+   layers never exist there.
 
-**Why:** architect FAILED the first cut for exactly two reasons — unsandboxed
-same-origin iframe could reach authed APIs, and the real assistant + upload
-surfaces stayed live behind the takeover. Both are security/UX boundary bugs.
+**Why:** architect FAILED an early cut for two reasons — unsandboxed same-origin
+iframe could reach authed APIs, and the real assistant + upload surfaces stayed
+live behind the takeover. Separately, gating the demo routes broke the guest
+tour. Keep both boundaries: sandboxed + orb-suppressed, but publicly reachable.
 
-**How to apply:** any new full-screen embedded/simulation route must do all
-three. Verbatim demo HTML lives in `artifacts/pepper/public/` and is iframed via
+**How to apply:** new full-screen demo/simulation route → render it public in
+`App.tsx`, add it to `TAKEOVER_ROUTES` (and `AppLayout.isTakeover` only if it is
+auth-gated like `/reveal`), and sandbox the iframe. Verbatim demo HTML lives in
+`artifacts/pepper/public/` and is iframed via
 `src={\`${import.meta.env.BASE_URL}<file>.html\`}`; keep its SIMULATION banner +
 disclaimers untouched. Dashboard entry cards live in `pages/Dashboard.tsx`.

@@ -138,15 +138,12 @@ function Router() {
       <Route path="/reveal">
         <ProtectedRoute component={Reveal} path="/reveal" />
       </Route>
-      <Route path="/market">
-        <ProtectedRoute component={Market} path="/market" />
-      </Route>
-      <Route path="/financing">
-        <ProtectedRoute component={Financing} path="/financing" />
-      </Route>
-      <Route path="/capital-markets">
-        <ProtectedRoute component={CapitalMarkets} path="/capital-markets" />
-      </Route>
+      {/* The simulation/demo takeover routes are public so the guided tour can
+          showcase them without requiring an account. They render full-screen
+          (no AppLayout) and the assistant orb is suppressed on them below. */}
+      <Route path="/market" component={Market} />
+      <Route path="/financing" component={Financing} />
+      <Route path="/capital-markets" component={CapitalMarkets} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -167,9 +164,22 @@ const APP_SHELL_ROUTES = [
   "/capital-markets",
 ];
 
+// Full-screen takeover/demo routes where the assistant orb must never surface —
+// for guests OR authenticated users — so no real engine runs over the
+// simulation (these render outside AppLayout, so suppression happens here).
+const TAKEOVER_ROUTES = [
+  "/reveal",
+  "/market",
+  "/financing",
+  "/capital-markets",
+];
+
 function GlobalAssistant() {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
+  // Never show the orb on full-screen takeover/demo routes (guest or authed),
+  // including the guided-tour stops a guest can now reach.
+  if (TAKEOVER_ROUTES.includes(location)) return null;
   // On authenticated app-shell screens the Hey Pep overlay handles assistance,
   // so the standard panel is suppressed there to avoid a duplicate orb. It
   // remains available everywhere else (public landing, onboarding) so anonymous

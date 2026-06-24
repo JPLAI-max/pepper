@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/auth";
@@ -7,22 +6,16 @@ import { useAuth } from "@/auth";
 // public/pepper-capital-markets-demo.html and embedded full-screen the same way
 // the Reveal screen is. It makes no real funding, trades, settlement, loans,
 // securities, or digital-asset/blockchain calls — every figure, balance, and
-// token is illustrative. We only gate access and offer a way back to the app.
+// token is illustrative. It is public so the guided tour can showcase it without
+// an account; we only offer a way back to the app.
 export default function CapitalMarkets() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) setLocation("/");
-  }, [isLoading, isAuthenticated, setLocation]);
-
-  if (isLoading) return null;
-  if (!isAuthenticated) return null;
 
   return (
     <>
       <button
-        onClick={() => setLocation("/dashboard")}
+        onClick={() => setLocation(isAuthenticated ? "/dashboard" : "/")}
         style={{
           position: "fixed",
           top: 14,
