@@ -2,7 +2,7 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { PepperProvider } from "@/pepper";
+import { PepperProvider, usePepper } from "@/pepper";
 import { AuthProvider, useAuth, AuthModalProvider } from "@/auth";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PepperAssistant } from "@/components/pepper/PepperAssistant";
@@ -72,6 +72,11 @@ function RevealRedirect() {
 
 function ProtectedRoute({ component: Component }: { component: any, path: string }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { tour } = usePepper();
+  // During an active guided tour, guests are allowed to PREVIEW protected pages
+  // (rendered with empty/placeholder data, since there's no account yet) so the
+  // tour can walk the whole product, not just the public demo routes.
+  const tourPreview = !!tour;
   const { data: profile, isLoading: profileLoading } = useGetProfile({
     query: { enabled: isAuthenticated, queryKey: getGetProfileQueryKey() },
   });
@@ -79,24 +84,27 @@ function ProtectedRoute({ component: Component }: { component: any, path: string
 
   // Auth gate: anonymous users cannot reach protected routes. Send them to the
   // public landing where they can chat and be invited to set up an account.
+  // Suspended while a tour is active so the guest preview above can render.
   useEffect(() => {
+    if (tourPreview) return;
     if (!authLoading && !isAuthenticated) {
       setLocation("/");
     }
-  }, [authLoading, isAuthenticated, setLocation]);
+  }, [authLoading, isAuthenticated, setLocation, tourPreview]);
 
   useEffect(() => {
+    if (tourPreview) return;
     if (!isAuthenticated || profileLoading || !profile) return;
     if (!profile.onboarded && location !== "/onboarding") {
       setLocation("/onboarding");
     } else if (profile.onboarded && location === "/onboarding") {
       setLocation("/dashboard");
     }
-  }, [profile, profileLoading, isAuthenticated, location, setLocation]);
+  }, [profile, profileLoading, isAuthenticated, location, setLocation, tourPreview]);
 
   if (authLoading) return null;
-  if (!isAuthenticated) return null;
-  if (profileLoading) return null;
+  if (!isAuthenticated && !tourPreview) return null;
+  if (isAuthenticated && profileLoading) return null;
 
   if (location === "/onboarding") {
     return <Component />;
@@ -176,7 +184,12 @@ const TAKEOVER_ROUTES = [
 
 function GlobalAssistant() {
   const { isAuthenticated } = useAuth();
+  const { tour } = usePepper();
   const [location] = useLocation();
+  // While a guided tour is running, the TourBanner is the only chrome over the
+  // walked pages — suppress the standalone orb everywhere so it never clutters
+  // (or covers) the page a guest is being shown.
+  if (tour) return null;
   // Never show the orb on full-screen takeover/demo routes (guest or authed),
   // including the guided-tour stops a guest can now reach.
   if (TAKEOVER_ROUTES.includes(location)) return null;

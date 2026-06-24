@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { ArrowRight, Mic, X } from "lucide-react";
 import { usePepper } from "@/pepper";
+import { useAuth } from "@/auth";
 
 /**
  * The guided-tour banner. Rendered globally (inside the router, alongside the
@@ -19,10 +20,26 @@ import { usePepper } from "@/pepper";
 export function TourBanner() {
   const { tour, tourNext, tourStop, dictateStart, dictateStop, dictating, setOpen } =
     usePepper();
+  const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
   const current = tour ? tour.stops[tour.index] : null;
   const route = current?.route;
+
+  // When the tour ends (finished or stopped), don't strand the user on the last
+  // stop — several stops are full-screen public demo pages with no normal way
+  // back. Return an authenticated user to their Command Center and a guest to
+  // the public landing. Tracked with a ref so this only fires on the
+  // active → ended transition, never on the initial idle mount.
+  const wasActiveRef = useRef(false);
+  useEffect(() => {
+    if (tour) {
+      wasActiveRef.current = true;
+    } else if (wasActiveRef.current) {
+      wasActiveRef.current = false;
+      setLocation(isAuthenticated ? "/dashboard" : "/");
+    }
+  }, [tour, isAuthenticated, setLocation]);
 
   // Navigate to the current stop whenever it changes (including on tour start
   // and on every Next). Close the chat panel at the same time so the demo

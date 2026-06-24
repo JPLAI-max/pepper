@@ -66,8 +66,28 @@ name path is now dead for nav; the coach still HAS the blocks for legacy callers
 ## Guided tour (extends the above)
 
 A "tour" intent ("give me the tour", "take me through the demos", "show me
-everything") walks the demo routes in order: /market → /financing →
-/capital-markets. Same architecture as single-route nav, with these specifics:
+everything") walks ALL 9 product pages in order: /dashboard → /goals → /roadmap
+→ /readiness → /opportunities → /documents → /market → /financing →
+/capital-markets (was only the 3 public demo routes). Same architecture as
+single-route nav, with these specifics:
+
+- **Guests preview the login-protected stops.** Most stops (/dashboard, /goals,
+  /roadmap, /readiness, /opportunities, /documents) are `ProtectedRoute`s that
+  normally bounce anon users to "/". When a tour is ACTIVE, `ProtectedRoute`
+  reads `usePepper().tour` (`tourPreview`) and SUSPENDS both the anon→"/" redirect
+  and the onboarding redirect, rendering the page shell for a guest. This is
+  FRONTEND-ONLY: the data APIs stay `requireAuth`, so a guest sees the shell with
+  empty/placeholder data and the protected GETs 401 (expected, not a bug). No
+  protected-data exposure. `GlobalAssistant` also returns null while a tour is
+  active so the orb never covers the walked page.
+- **Tour end must return home, or the user is stranded.** The last stops are
+  full-screen public demo pages with no normal back affordance, and they're NOT
+  ProtectedRoutes (so nothing redirects a guest when the tour clears). `TourBanner`
+  has an effect keyed on `tour` with a `wasActiveRef` that, on the active→ended
+  transition only (not initial mount), `setLocation`s authed→/dashboard,
+  guest→"/". After that the normal ProtectedRoute onboarding enforcement resumes.
+- Adding a page to the tour requires it be in BOTH `NAV_ALLOWLIST` and `TOUR_STOPS`
+  (the `satisfies …NavRoute…` enforces this) plus a `NAV_LABELS` entry.
 
 - Server: the classifier is now `classifyOverlayIntent()` returning
   `{navigate, tour}` (gated by `mightBeOverlayIntent`). Tour stops are

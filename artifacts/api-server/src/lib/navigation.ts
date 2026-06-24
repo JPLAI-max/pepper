@@ -12,10 +12,14 @@ import { logger } from "./logger";
  */
 export const NAV_ALLOWLIST = [
   "/dashboard",
+  "/goals",
+  "/roadmap",
+  "/readiness",
+  "/opportunities",
+  "/documents",
   "/market",
   "/financing",
   "/capital-markets",
-  "/roadmap",
   "/reveal",
 ] as const;
 
@@ -30,10 +34,14 @@ export function isAllowedRoute(route: string): route is NavRoute {
 /** Human-friendly labels Pepper uses when confirming a navigation out loud. */
 export const NAV_LABELS: Record<NavRoute, string> = {
   "/dashboard": "your Command Center",
+  "/goals": "your Goals",
+  "/roadmap": "your Roadmap",
+  "/readiness": "your Readiness",
+  "/opportunities": "Opportunities",
+  "/documents": "your Documents",
   "/market": "the Trading Desk",
   "/financing": "Financing",
   "/capital-markets": "Capital Markets",
-  "/roadmap": "your Roadmap",
   "/reveal": "your Reveal",
 };
 
@@ -45,6 +53,42 @@ export const NAV_LABELS: Record<NavRoute, string> = {
  * `intro` is the one-line introduction shown at each stop.
  */
 export const TOUR_STOPS = [
+  {
+    route: "/dashboard",
+    name: "Command Center",
+    intro:
+      "This is your Command Center — the home base where your wealth picture, scores, and next steps come together at a glance.",
+  },
+  {
+    route: "/goals",
+    name: "Goals",
+    intro:
+      "Here are your Goals — the things you're working toward, like buying a first home or building passive income.",
+  },
+  {
+    route: "/roadmap",
+    name: "Roadmap",
+    intro:
+      "This is your Roadmap — the personalized, step-by-step plan that gets you from where you are to where you want to be.",
+  },
+  {
+    route: "/readiness",
+    name: "Readiness",
+    intro:
+      "These are your Readiness scores — an educational read on homeownership, investment, credit, and debt, with no judgment.",
+  },
+  {
+    route: "/opportunities",
+    name: "Opportunities",
+    intro:
+      "Here's Opportunities — curated lending and investment options matched to your situation as you make progress.",
+  },
+  {
+    route: "/documents",
+    name: "Documents",
+    intro:
+      "This is your Documents vault — a private, organized home for the paperwork your goals depend on.",
+  },
   {
     route: "/market",
     name: "Trading Desk",
@@ -73,7 +117,7 @@ export type TourStop = (typeof TOUR_STOPS)[number];
 const NAV_VERB_CUE =
   /\b(take me|bring me|go to|going to|navigate|open|show me|head (?:to|over|on)|jump to|switch to|pull up|get me to|let'?s (?:go|see|head))\b/i;
 const NAV_DEST_CUE =
-  /\b(trading desk|capital markets?|loan trading|secondary market|financing|lending|dashboard|command cent(?:er|re)|road ?map|reveal|the market)\b/i;
+  /\b(trading desk|capital markets?|loan trading|secondary market|financing|lending|dashboard|command cent(?:er|re)|road ?map|readiness|goals?|opportunit(?:y|ies)|documents?|vault|reveal|the market)\b/i;
 // Cues for the guided tour ("take me through the demos", "give me the tour"…).
 const TOUR_CUE =
   /\b(tour|the demos|all the demos|through the demos|walk me through|show me everything|see everything|show me all)\b/i;
@@ -117,10 +161,14 @@ Respond with JSON ONLY, in the form {"route": "<route>", "tour": <true|false>} w
 
 Allowed routes and the language that maps to each:
 - "/dashboard" — dashboard, command center, home, overview
+- "/goals" — my goals, goals
+- "/roadmap" — my roadmap, my plan, my steps
+- "/readiness" — readiness, my readiness scores, scores
+- "/opportunities" — opportunities, deals, the marketplace
+- "/documents" — documents, my documents, the vault, paperwork
 - "/market" — the trading desk, the market
 - "/financing" — financing, lending, loans (as a product area)
 - "/capital-markets" — capital markets, loan trading, the secondary market
-- "/roadmap" — my roadmap, my plan, my steps
 - "/reveal" — reveal
 
 Rules:
